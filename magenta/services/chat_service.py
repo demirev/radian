@@ -6,7 +6,7 @@ from fastapi import Depends
 from core.config import logger, openai_client, spacy_model, get_db
 from core.models import ToolWithContext
 from services.document_service import perform_postgre_search, add_rag_results_to_message, add_documents_to_sysprompt
-from core.tools import tool_handler
+from core.tools import tool_handler, default_function_dictionary
 
 
 def call_gpt(
@@ -120,6 +120,7 @@ def get_tools(sysprompt, tools_collection):
 def call_llm_and_process_tools(
     new_messages, sysprompt, tools, call_llm_func, 
     tool_handler, tools_collection, 
+    function_dictionary,
     context_arguments=None,
     max_chained_tool_calls=10
 ):
@@ -156,6 +157,7 @@ def call_llm_and_process_tools(
         name = tool_call.function.name,
         arguments = json.loads(tool_call.function.arguments),
         tools_collection=tools_collection,
+        function_dictionary=function_dictionary,
         context_arguments = context_arguments
       )
       logger.info(f"Tool {tool_call.function.name} returned: {tool_result}")
@@ -198,6 +200,7 @@ def process_chat(
     context_arguments=None,
     db: Session = Depends(get_db),
     spacy_model=spacy_model,
+    function_dictionary=default_function_dictionary,
     skip_word=None, # e.g. "PASS" might mean "don't send message" depending on the prompt
     sysprompt_suffix: Optional[str] = None # this will be added to the end of the sysprompt. Usefull for runtime modifications of the sysprompt
 ):
@@ -279,7 +282,8 @@ def process_chat(
         call_llm_func=call_llm_func, 
         tool_handler=tool_handler,
         tools_collection=tools_collection,
-        context_arguments=context_arguments
+        context_arguments=context_arguments,
+        function_dictionary=function_dictionary
       )
 
     if skip_word is not None: 
