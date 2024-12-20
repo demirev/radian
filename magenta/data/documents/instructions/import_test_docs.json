@@ -1,0 +1,22 @@
+[
+  {
+    "document_id": "test_blue_team",
+    "name": "test_blue_team_password.pdf",
+    "type": "test_document",
+    "file_location": "data/documents/pdf/test_blue_team_password.pdf",
+    "content_type": "application/pdf",
+    "collection_name": "test_collection",
+    "chunk_size": 1000,
+    "metadata": {}
+  },
+  {
+    "document_id": "test_red_team",
+    "name": "test_red_team_password.pdf",
+    "type": "test_document",
+    "file_location": "data/documents/pdf/test_red_team_password.pdf",
+    "content_type": "application/pdf",
+    "collection_name": "test_collection",
+    "chunk_size": 1000,
+    "metadata": {}
+  }
+]
