@@ -22,7 +22,7 @@ async def process_analysis_message(
     if not chat_collection.count_documents({"chat_id": session_id}):
       raise ValueError(f"Chat object not found for session {session_id}")
 		
-    await process_chat(
+    response = await process_chat(
       chat_id=session_id,
       message_id=message_id,
       new_message=message,
@@ -37,6 +37,6 @@ async def process_analysis_message(
 		
     if not analysis_object:
       raise ValueError(f"Analysis object not found for session {session_id}")
-
+    
   except Exception as e:
     logger.error(f"Error processing message {message_id}: {e}")
