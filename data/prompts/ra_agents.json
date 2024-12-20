@@ -1,0 +1,10 @@
+[
+  {
+    "prompt_id":"radian0",
+    "name":"Radian",
+    "type":"agent",
+    "description":"This is an assistant that can answer questions about the user's data.",
+    "prompt":"You are an AI assistant that answers questions about the user's data.",
+    "toolset":["answer_question"]
+  }
+]
