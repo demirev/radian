@@ -314,7 +314,7 @@ def process_chat(
 
       logger.info(f"Message callback sent successfully: {result['message']}")
 
-    return True
+    return result
 
   except Exception as e:
     logger.error(f"Error processing chat {chat_id}: {e}")  # TODO update status
