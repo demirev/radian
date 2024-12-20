@@ -89,7 +89,7 @@ def get_current_utc_datetime() -> str:
 
 
 # json objects to describe functions --------------------------------------------
-all_function_tool_definitions = [
+default_function_tool_definitions = [
 	{
 		"tool_id": "getcurrentutcdatetime",
 		"type": "function",
@@ -126,14 +126,17 @@ all_function_tool_definitions = [
 
 
 # dictionary of function names --------------------------------------------------
-function_dictionary = {
+default_function_dictionary = {
   "get_current_utc_datetime": get_current_utc_datetime,
   "roll_dice": roll_dice
 }
 
 
 # functions to be imported from other scripts ------------------------------------
-def validate_function_dictionary():
+def validate_function_dictionary(
+		function_dictionary: dict, 
+		all_function_tool_definitions: List[Dict[str, Any]]
+	):
   result = validate_all_functions(function_dictionary, all_function_tool_definitions)
   # check if any errors were found
   all_errors = []
@@ -145,9 +148,14 @@ def validate_function_dictionary():
     raise ValueError(f"Errors found in function dictionary: {all_errors}")
 
 
-async def load_all_functions_in_db(mongo_connections, overwrite=True):
+async def load_all_functions_in_db(
+  mongo_connections, 
+  overwrite=True,
+  function_dictionary: dict = default_function_dictionary,
+	all_function_tool_definitions: List[Dict[str, Any]] = default_function_tool_definitions
+):
   # validate function dictionary
-  validate_function_dictionary()
+  validate_function_dictionary(function_dictionary, all_function_tool_definitions)
 
   # insert all functions into the database
   for mongo_connection in mongo_connections:
@@ -175,7 +183,13 @@ async def load_all_functions_in_db(mongo_connections, overwrite=True):
         raise ValueError(f"Function '{func_name}' not found in all_function_tool_definitions.")
 
 
-def tool_handler(name: str, arguments: dict, tools_collection, context_arguments: dict = None):
+def tool_handler(
+		name: str, 
+		arguments: dict,
+		tools_collection,
+		function_dictionary: dict = default_function_dictionary,
+		context_arguments: dict = None
+	):
 	# find tool in database
 	tool = tools_collection.find_one({"function.name": name})
 	if not tool:
