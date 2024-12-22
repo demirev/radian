@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
     logger.info("Application server started.")
     
     # Startup logic
+    tenant_collections.add_collection_type("analysis")
     await create_postgres_extensions(get_db)
     await load_prompts_from_files(tenant_collections.get_collections_list("prompts"), dir="data/prompts")
     await create_initial_users(users_collection, dir="data/users")
