@@ -8,7 +8,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from magenta.core.security import (
   authenticate_user, get_current_active_user, create_access_token, 
-  create_initial_users, users_collection
+  create_initial_users, users_collection, 
+  Token, User, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from magenta.core import (
     logger, mongo_client, engine,
