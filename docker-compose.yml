@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+  magenta:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: radian:latest
+    container_name: radian
+    ports:
+      - "8000:8000"
+    depends_on:
+      #- postgres
+      - mongo
+    environment:
+      #- POSTGRES_HOST=postgres
+      #- POSTGRES_PORT=5432
+      #- POSTGRES_DB=radian
+      #- POSTGRES_USER=radian_user
+      #- POSTGRES_PASSWORD=radian_password
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_DB=radian
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      #- SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - ENV=${ENV:-DEV}
+    volumes:
+      - ./logs:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  tests:
+    image: radian:latest
+    container_name: tests
+    depends_on:
+      - radian
+    environment:
+      #- POSTGRES_HOST=postgres
+      #- POSTGRES_PORT=5432
+      #- POSTGRES_DB=magenta
+      #- POSTGRES_USER=magenta_user
+      #- POSTGRES_PASSWORD=magenta_password
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_DB=radian
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      #- SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - ENV=${ENV:-DEV}
+    volumes:
+      - ./logs:/app/logs
+      #- ./tests:/app/tests
+    command: ["pytest", "tests/tests.py"]
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

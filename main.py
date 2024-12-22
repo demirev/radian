@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
         function_dictionary=analysis_function_dictionary,
         all_function_tool_definitions=analysis_function_tool_definitions
     )
-    await cleanup_mongo(tenant_collections.get_collections_list("analysis"),[{"session_id":"test_session_id"}])
+    await cleanup_mongo(tenant_collections.get_collections_list("analysis"),[{"context_id":"test_context"}])
 
     yield
     
