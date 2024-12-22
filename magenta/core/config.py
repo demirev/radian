@@ -84,9 +84,11 @@ class TenantCollections:
 		logger.info(f"Loaded {len(known_tenants)} known tenants: {known_tenants}")
 		return known_tenants
 
-	def _register_default_collections(self):
+	def _register_default_collections(self, collection_names = None):
 		default_db = self.mongo_client["default"]
-		for collection_name in self.collections:
+		if collection_names is None:
+			collection_names = self.collections.keys()
+		for collection_name in collection_names:
 			self.collections[collection_name]["default"] = getattr(default_db, collection_name)
 
 		for tenant in self.all_tenants:
@@ -94,7 +96,7 @@ class TenantCollections:
 
 	def _register_tenant_collections(self, tenant_id):
 		tenant_db = self.mongo_client[tenant_id]
-		for collection_name in self.collections:
+		for collection_name in self.collections.keys():
 			self.collections[collection_name][tenant_id] = getattr(tenant_db, collection_name)
 
 	def get_collection(self, tenant_id: str, collection_name: str, search_db=False):
@@ -122,6 +124,19 @@ class TenantCollections:
 		self.tenants_collection.delete_one({"tenant_id": tenant_id})
 		self.all_tenants = [t for t in self.all_tenants if t.tenant_id != tenant_id]
 		logger.info(f"Removed tenant: {tenant_id}")
+
+	def add_collection_type(self, collection_name: str):
+		if collection_name in self.collections:
+			logger.warning(f"Collection {collection_name} already exists")
+			return
+			
+		# Add new empty dict for this collection type
+		self.collections[collection_name] = {}
+		
+		# Reuse existing registration methods
+		self._register_default_collections(collection_names=[collection_name])
+		
+		logger.info(f"Added new collection type: {collection_name}")
 
 
 tenant_collections = TenantCollections(
