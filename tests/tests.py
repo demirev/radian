@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app
 
 # client = ExternalClient("http://localhost:8000") # for local testing
 client = TestClient(app)
