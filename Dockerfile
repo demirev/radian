@@ -10,11 +10,13 @@ COPY requirements.txt ./
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spacy model
-# RUN python -m spacy download en_core_web_lg
+# Copy magenta project files to root level to avoid relative import issues
+COPY magenta/ ./
 
-# Copy the rest of the application code into the container
-COPY magenta/ ./magenta
+# Create a symbolic link so from magenta.core import ... type statements work
+RUN ln -s /app /app/magenta
+
+# Copy your application specific files
 COPY app/ ./app
 COPY data/ ./data
 COPY logs/ ./logs
