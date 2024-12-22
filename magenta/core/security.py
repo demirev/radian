@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from jwt.exceptions import InvalidTokenError
 from pymongo import MongoClient
-from core.config import SECRET_KEY, logger, MONGO_HOST, MONGO_PORT, MONGO_DB
+from .config import SECRET_KEY, logger, MONGO_HOST, MONGO_PORT, MONGO_DB
 
 # define env vars
 ALGORITHM = "HS256"

@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from openai import OpenAI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.models import Tenant
+from .models import Tenant
 
 
 # add logger

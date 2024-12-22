@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from core.config import logger, openai_client, spacy_model, get_db
 from core.models import ToolWithContext
-from services.document_service import perform_postgre_search, add_rag_results_to_message, add_documents_to_sysprompt
 from core.tools import tool_handler, default_function_dictionary
+from .document_service import perform_postgre_search, add_rag_results_to_message, add_documents_to_sysprompt
 
 
 def call_gpt(
