@@ -4,8 +4,8 @@ import httpx
 import uuid
 from datetime import datetime
 from typing import Callable, Dict, List, Any
-from core.models import Tool, ToolWithContext, HttpMethod
-from core.config import logger, tenant_collections
+from .models import Tool, ToolWithContext, HttpMethod
+from .config import logger, tenant_collections
 
 # helpers for validating definitions --------------------------------------------
 def validate_function_args(func: Callable, func_def: Dict[str, Any]) -> List[str]:

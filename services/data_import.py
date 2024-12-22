@@ -6,7 +6,8 @@ from core import logger
 from core.models import Prompt
 from core.config import spacy_model, get_db
 from core.utils import create_postgres_table, get_vector_table, drop_postgres_table
-from services.document_service import process_document
+from .document_service import process_document
+
 
 async def load_prompts_from_files(collections, dir = "data/prompts", drop_collection=False, drop_if_exists=True):
   for collection in collections:
