@@ -1,6 +1,7 @@
 from typing import List, Optional, Literal, Union, Dict
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage
+from app.core.tools import analysis_function_dictionary
 from magenta.routes.chats import create_chat, delete_chat, send_chat
 from magenta.core.config import tenant_collections
 from magenta.core.models import ChatMessage, TaskStatus
@@ -116,9 +117,10 @@ async def add_message_to_analysis_session(
     message_id=message_id,
     new_message=message_to_process,
     dry_run=dry_run,
-    context_arguments={"session_id": session_id},
+    context_arguments={"session_id": session_id, "tenant_id": tenant_id},
     json_mode=False,
-    tool_choice="auto"
+    tool_choice="auto",
+    function_dictionary=analysis_function_dictionary
   )
   
   message_object = ChatMessage(
@@ -134,6 +136,20 @@ async def add_message_to_analysis_session(
   )
 
   return TaskStatus(task_id=message_id, status="success")
+
+
+@analysis_router.get("/{session_id}/messages/{message_id}", response_model=ChatMessage)
+async def get_message_from_analysis_session(session_id: str, message_id: str, tenant_id: str = "default"):
+  analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+  if not analysis_collection.count_documents({"session_id": session_id}):
+    raise HTTPException(status_code=404, detail="Analysis session not found")
+
+  message = analysis_collection.find_one({"session_id": session_id, "messages.message_id": message_id}, {"_id": 0})
+  if not message:
+    raise HTTPException(status_code=404, detail="Message not found")
+  
+  message_object = ChatMessage(**message["messages"][0])
+  return message_object
 
 
 @analysis_router.get("/{session_id}/code", response_model=List[CodePair])
@@ -167,9 +183,10 @@ async def add_code_to_analysis_session(
     message_id=code_message_id,
     new_message=message_to_process,
     dry_run=dry_run,
-    context_arguments={"session_id": session_id},
+    context_arguments={"session_id": session_id, "tenant_id": tenant_id},
     json_mode=False,
-    tool_choice="auto"
+    tool_choice="auto",
+    function_dictionary=analysis_function_dictionary
   )
 
   code_message_object = CodePairMessage(
@@ -188,3 +205,16 @@ async def add_code_to_analysis_session(
 
   return TaskStatus(task_id=code_message_id, status="success")
 
+
+@analysis_router.get("/{session_id}/code/{message_id}", response_model=CodePairMessage)
+async def get_code_from_analysis_session(session_id: str, message_id: str, tenant_id: str = "default"):
+  analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+  if not analysis_collection.count_documents({"session_id": session_id}):
+    raise HTTPException(status_code=404, detail="Analysis session not found")
+
+  code_message = analysis_collection.find_one({"session_id": session_id, "code_snippets.message_id": message_id}, {"_id": 0})
+  if not code_message:
+    raise HTTPException(status_code=404, detail="Code message not found")
+  
+  code_message_object = CodePairMessage(**code_message["code_snippets"][0])
+  return code_message_object

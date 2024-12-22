@@ -11,7 +11,7 @@ async def process_analysis_message(
     dry_run: bool = False,
 		type: Literal["code", "message"] = "message"
 ):
-  pass
+  pass # not currently used, intead calling process_chat directly. May be used in the future.
 
   try:
     analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")

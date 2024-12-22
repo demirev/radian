@@ -2,41 +2,46 @@ from fastapi import FastAPI
 import os
 import uvicorn
 from contextlib import asynccontextmanager
-
-# Import from magenta bundle
+from typing import Annotated
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from magenta.core.security import (
+  authenticate_user, get_current_active_user, create_access_token, 
+  create_initial_users, users_collection
+)
 from magenta.core import (
-    logger, mongo_client, spacy_model, engine,
-    tenant_collections, get_db, SLACK_WEBHOOK_URL,
-    create_postgres_extensions, send_slack_message
+    logger, mongo_client, engine,
+    tenant_collections, get_db,
+    create_postgres_extensions, load_all_functions_in_db, cleanup_mongo
 )
-from magenta.routes import (
-    prompts_router, documents_router, chats_router,
-    tools_router, tenants_router
-)
-from magenta.services import load_prompts_from_files, load_documents_from_files
-
-# Import your custom routes
+from magenta.services import load_prompts_from_files
 from app.routes import analysis_router
+from magenta.core.tools import analysis_function_dictionary, analysis_function_tool_definitions
+
+
+ENV = os.getenv('ENV', 'DEV')
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application server started.")
     
-    # Reuse magenta's startup logic
+    # Startup logic
     await create_postgres_extensions(get_db)
     await load_prompts_from_files(tenant_collections.get_collections_list("prompts"), dir="data/prompts")
-    await load_documents_from_files(
-        documents_collections=tenant_collections.collections["documents"],
-        dir="data/documents/instructions",
-        model=spacy_model
+    await create_initial_users(users_collection, dir="data/users")
+    await load_all_functions_in_db(
+        tenant_collections.get_collections_list("tools"),
+        overwrite=True,
+        function_dictionary=analysis_function_dictionary,
+        all_function_tool_definitions=analysis_function_tool_definitions
     )
-    
-    # Add your custom startup logic here if needed
-    
+    await cleanup_mongo(tenant_collections.get_collections_list("analysis"),[{"session_id":"test_session_id"}])
+
     yield
     
-    # Cleanup from magenta
+    # Shutdown logic
     mongo_client.close()
     engine.dispose()
     logger.info("Application server stopped.")
@@ -45,19 +50,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Include magenta routers
-app.include_router(chats_router)
-app.include_router(prompts_router)
-app.include_router(tools_router)
-app.include_router(documents_router)
-app.include_router(tenants_router)
-
-# Include project routers
-app.include_router(analysis_router, prefix="/analysis", tags=["analysis"])
+app.include_router(analysis_router)
 
 
 @app.get("/")
 async def read_root():
-    return {"message": "My Custom Project using Magenta Framework"}
+    return {"message": "Radian agent for data analysis"}
 
 
 @app.get("/healthcheck")
@@ -65,8 +63,28 @@ async def healthcheck():
     return {"status": "ok"}
 
 
-# Reuse other key routes from magenta if needed
-# You can either import them directly or reimplement them here
+# token and user endpoints
+@app.post("/token")
+async def login_for_access_token(
+	form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> Token:
+	user = authenticate_user(users_collection, form_data.username, form_data.password)
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="Incorrect username or password",
+			headers={"WWW-Authenticate": "Bearer"}
+		)
+	access_token = create_access_token(
+		data={"sub": user.username}, expires_delta=ACCESS_TOKEN_EXPIRE_MINUTES
+	)
+	return Token(access_token=access_token, token_type="bearer")
+
+@app.get("/users/me/", response_model=User)
+async def read_users_me(
+	current_user: Annotated[User, Depends(get_current_active_user)],
+):
+	return current_user
 
 
 if __name__ == "__main__":

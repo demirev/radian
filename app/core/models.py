@@ -6,8 +6,6 @@ from magenta.core.models import ChatMessage # role, content, message_id, timesta
 
 
 class CodeSnippet(BaseModel):
-  message_id: str
-  role: Literal["user", "assistant"]
   type: Literal["execution", "suggestion"]
   language: Literal["R", "py"]
   code_snippet: str
@@ -33,7 +31,7 @@ class AnalysisSession(BaseModel):
   session_id: str
   context_id: str
   messages: list[ChatMessage] | None = None
-  code_snippets: list[CodeSnippet] | None = None
+  code_snippets: list[CodePairMessage] | None = None
   sysprompt_id: str = "radiant0"
   chat_id: str | None = None
   tenant_id: str = "default"

@@ -16,7 +16,7 @@ def suggest_code(tenant_id: str, session_id: str, code: str, language: str):
   new_code_suggestion = CodePairMessage(
     message_id=uuid.uuid4(),
     content=code,
-    role="user",
+    role="assistant",
     timestamp=datetime.now(),
     type="code_pair",
     code_pair=CodePair(
@@ -46,7 +46,7 @@ def run_code(tenant_id: str, session_id: str, code: str, language: str):
   new_code_execution = CodePairMessage(
     message_id=uuid.uuid4(),
     content=code,
-    role="user",
+    role="assistant",
     timestamp=datetime.now(),
     type="code_pair",
     code_pair=CodePair(
