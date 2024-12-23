@@ -2,6 +2,7 @@ from typing import Literal
 from magenta.core.config import tenant_collections, logger
 from magenta.core.models import ChatMessage
 from magenta.services.chat_service import process_chat
+from core.tools import analysis_function_dictionary
 
 async def process_analysis_message(
     message: str, 
@@ -29,7 +30,12 @@ async def process_analysis_message(
       dry_run=dry_run,
       context_arguments={"session_id": session_id},
       json_mode=False,
-      tool_choice="auto"
+      tool_choice="auto",
+      function_dictionary=analysis_function_dictionary,
+      chats_collection=tenant_collections.get_collection(tenant_id, "chats"),
+      prompts_collection=tenant_collections.get_collection(tenant_id, "prompts"),
+      documents_collection=tenant_collections.get_collection(tenant_id, "documents"),
+      tools_collection=tenant_collections.get_collection(tenant_id, "tools")
     )
 		
     # re-fetch analysis object to see if agent made any changes

@@ -123,7 +123,11 @@ async def add_message_to_analysis_session(
     context_arguments={"session_id": session_id, "tenant_id": tenant_id},
     json_mode=False,
     tool_choice="auto",
-    function_dictionary=analysis_function_dictionary
+    function_dictionary=analysis_function_dictionary,
+    chats_collection=tenant_collections.get_collection(tenant_id, "chats"),
+    prompts_collection=tenant_collections.get_collection(tenant_id, "prompts"),
+    documents_collection=tenant_collections.get_collection(tenant_id, "documents"),
+    tools_collection=tenant_collections.get_collection(tenant_id, "tools")
   )
   
   message_object = ChatMessage(
