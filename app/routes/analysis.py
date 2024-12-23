@@ -3,7 +3,7 @@ from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage
 from app.core.tools import analysis_function_dictionary
 from magenta.routes.chats import create_chat, delete_chat, send_chat
-from magenta.core.config import tenant_collections
+from magenta.core.config import tenant_collections, logger
 from magenta.core.models import ChatMessage, TaskStatus
 from magenta.services.chat_service import process_chat
 from datetime import datetime
@@ -42,6 +42,7 @@ async def create_analysis_session(
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
   session_id = str(uuid.uuid4())
+  logger.info(f"Creating analysis session {session_id}")
 
   # create a chat
   chat = await create_chat(
@@ -50,17 +51,18 @@ async def create_analysis_session(
     tenant_id=tenant_id,
     sysprompt_id=sysprompt_id
   )
+  logger.info(f"Created chat {chat}")
 
   analysis_session = AnalysisSession(
     context_id=context_id,
     session_id=session_id,
     tenant_id=tenant_id,
     sysprompt_id=sysprompt_id,
-    chat_id=chat.chat_id,
+    chat_id=chat["chat_id"],
   )
   
   analysis_collection.insert_one(analysis_session.model_dump(exclude_none=True))
-
+  logger.info(f"Inserted analysis session {analysis_session}")
   return analysis_session
 
 
@@ -86,7 +88,7 @@ async def delete_analysis_session(session_id: str, tenant_id: str = "default"):
   return {"status": "success"}
 
 
-@analysis_router.get("/{session_id}/messages", response_model=List[str])
+@analysis_router.get("/{session_id}/messages", response_model=List[ChatMessage])
 async def get_messages_from_analysis_session(session_id: str, tenant_id: str = "default"):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
@@ -94,10 +96,10 @@ async def get_messages_from_analysis_session(session_id: str, tenant_id: str = "
   if not messages:
     raise HTTPException(status_code=404, detail="No messages found")
   
-  return messages["messages"]
+  return [ChatMessage(**message) for message in messages["messages"]]
 
 
-@analysis_router.post("/{session_id}/messages", response_model=TaskStatus)
+@analysis_router.post("/{session_id}/messages", response_model=Dict[str, str])
 async def add_message_to_analysis_session(
   session_id: str,
   message: str,
@@ -135,7 +137,7 @@ async def add_message_to_analysis_session(
     {"$push": {"messages": message_object.model_dump(exclude_none=True)}}
   )
 
-  return TaskStatus(task_id=message_id, status="success")
+  return {"task_id": message_id, "status": "success"}
 
 
 @analysis_router.get("/{session_id}/messages/{message_id}", response_model=ChatMessage)
@@ -152,15 +154,18 @@ async def get_message_from_analysis_session(session_id: str, message_id: str, te
   return message_object
 
 
-@analysis_router.get("/{session_id}/code", response_model=List[CodePair])
+@analysis_router.get("/{session_id}/code", response_model=List[CodePairMessage])
 async def get_code_from_analysis_session(session_id: str, tenant_id: str = "default"):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
   code_snippets = analysis_collection.find_one({"session_id": session_id}, {"code_snippets": 1, "_id": 0})
-  return code_snippets["code_snippets"]
+  if not code_snippets:
+    raise HTTPException(status_code=404, detail="No code snippets found")
+  
+  return [CodePair(**code_snippet) for code_snippet in code_snippets["code_snippets"]]
 
 
-@analysis_router.post("/{session_id}/code", response_model=TaskStatus)
+@analysis_router.post("/{session_id}/code", response_model=Dict[str, str])
 async def add_code_to_analysis_session(
   session_id: str,
   code: CodePair,
@@ -170,10 +175,10 @@ async def add_code_to_analysis_session(
 ):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
-  message_to_process = "[CODE]\n\n[INPUT]\n\n```" + code["input"]["code_snippet"] + "```\n\n"
+  message_to_process = "[CODE]\n\n[INPUT]\n\n```" + code.input.code_snippet + "```\n\n"
 
-  if code["output"]:
-    message_to_process += "[OUTPUT]\n\n```" + code["output"]["response"] + "```\n\n"
+  if code.output:
+    message_to_process += "[OUTPUT]\n\n```" + code.output.response + "```\n\n"
 
   code_message_id = str(uuid.uuid4())
 
@@ -203,7 +208,7 @@ async def add_code_to_analysis_session(
     {"$push": {"code_snippets": code_message_object.model_dump(exclude_none=True)}}
   )
 
-  return TaskStatus(task_id=code_message_id, status="success")
+  return {"task_id": code_message_id, "status": "success"}
 
 
 @analysis_router.get("/{session_id}/code/{message_id}", response_model=CodePairMessage)

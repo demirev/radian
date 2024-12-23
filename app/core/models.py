@@ -12,10 +12,8 @@ class CodeSnippet(BaseModel):
 
 
 class CodeResponse(BaseModel):
-  message_id: str
-  role: Literal["user", "assistant"]
   response: str
-
+  status: Literal["success", "error"]
 
 class CodePair(BaseModel):
     input: CodeSnippet

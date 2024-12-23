@@ -28,6 +28,11 @@ services:
       - ./logs:/app/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   tests:
     image: radian:latest
