@@ -9,6 +9,7 @@ from magenta.services.chat_service import process_chat
 from datetime import datetime
 import uuid
 
+
 analysis_router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
@@ -191,7 +192,11 @@ async def add_code_to_analysis_session(
     context_arguments={"session_id": session_id, "tenant_id": tenant_id},
     json_mode=False,
     tool_choice="auto",
-    function_dictionary=analysis_function_dictionary
+    function_dictionary=analysis_function_dictionary,
+    chats_collection=tenant_collections.get_collection(tenant_id, "chats"),
+    prompts_collection=tenant_collections.get_collection(tenant_id, "prompts"),
+    documents_collection=tenant_collections.get_collection(tenant_id, "documents"),
+    tools_collection=tenant_collections.get_collection(tenant_id, "tools")
   )
 
   code_message_object = CodePairMessage(
