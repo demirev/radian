@@ -121,6 +121,7 @@ def call_llm_and_process_tools(
     new_messages, sysprompt, tools, call_llm_func, 
     tool_handler, tools_collection, 
     function_dictionary,
+    json_mode=False,
     context_arguments=None,
     max_chained_tool_calls=10
 ):
@@ -129,7 +130,8 @@ def call_llm_and_process_tools(
   llm_result = call_llm_func(
     messages=new_messages, 
     sysprompt=sysprompt["prompt"],
-    tools=tools
+    tools=tools,
+    json_mode=json_mode
   )
   logger.info(f"LLM response received: {llm_result['message']}")
   
@@ -175,7 +177,8 @@ def call_llm_and_process_tools(
     llm_result = call_llm_func(
       messages=new_messages, 
       sysprompt=sysprompt["prompt"],
-      tools=tools
+      tools=tools,
+      json_mode=json_mode
     )
 
   result = {"message":llm_result["message"]}
@@ -193,6 +196,7 @@ def process_chat(
     sysprompt_id: Optional[str] = None, # used to overwrite the sysprompt id saved in the chat object
     callback_func=None,
     dry_run=False,
+    json_mode=False,
     call_llm_func=call_gpt,
     rag_func=perform_postgre_search,
     rag_table_name: str = None,
@@ -280,6 +284,7 @@ def process_chat(
         sysprompt=sysprompt, 
         tools=tools, 
         call_llm_func=call_llm_func, 
+        json_mode=json_mode,
         tool_handler=tool_handler,
         tools_collection=tools_collection,
         context_arguments=context_arguments,
