@@ -162,7 +162,7 @@ async def get_code_from_analysis_session(session_id: str, tenant_id: str = "defa
   if not code_snippets:
     raise HTTPException(status_code=404, detail="No code snippets found")
   
-  return [CodePair(**code_snippet) for code_snippet in code_snippets["code_snippets"]]
+  return [CodePairMessage(**code_snippet) for code_snippet in code_snippets["code_snippets"]]
 
 
 @analysis_router.post("/{session_id}/code", response_model=Dict[str, str])
