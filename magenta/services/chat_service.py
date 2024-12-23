@@ -11,7 +11,7 @@ from .document_service import perform_postgre_search, add_rag_results_to_message
 
 def call_gpt(
     messages, sysprompt=None, client=openai_client, 
-    json_mode=False, model = "gpt-4o", tools=None
+    json_mode=False, model = "gpt-4o", tools=None, tool_choice="auto"
   ):
   logger.info(f"Calling GPT")
   if sysprompt is not None:
@@ -36,7 +36,7 @@ def call_gpt(
         response_format={ "type": "json_object" },
         messages=messages,
         tools=tools,
-        tool_choice="auto"
+        tool_choice=tool_choice
       )
     else:
       completion = client.chat.completions.create(
@@ -54,7 +54,7 @@ def call_gpt(
         model=model,
         messages=messages,
         tools=tools,
-        tool_choice="auto" if len(tools) else "none"
+        tool_choice=tool_choice
       )
     else:
       completion = client.chat.completions.create(
@@ -122,6 +122,7 @@ def call_llm_and_process_tools(
     tool_handler, tools_collection, 
     function_dictionary,
     json_mode=False,
+    tool_choice="auto",
     context_arguments=None,
     max_chained_tool_calls=10
 ):
@@ -131,7 +132,8 @@ def call_llm_and_process_tools(
     messages=new_messages, 
     sysprompt=sysprompt["prompt"],
     tools=tools,
-    json_mode=json_mode
+    json_mode=json_mode,
+    tool_choice=tool_choice
   )
   logger.info(f"LLM response received: {llm_result['message']}")
   
@@ -178,7 +180,8 @@ def call_llm_and_process_tools(
       messages=new_messages, 
       sysprompt=sysprompt["prompt"],
       tools=tools,
-      json_mode=json_mode
+      json_mode=json_mode,
+      tool_choice=tool_choice
     )
 
   result = {"message":llm_result["message"]}
@@ -197,6 +200,7 @@ def process_chat(
     callback_func=None,
     dry_run=False,
     json_mode=False,
+    tool_choice="auto",
     call_llm_func=call_gpt,
     rag_func=perform_postgre_search,
     rag_table_name: str = None,
@@ -285,6 +289,7 @@ def process_chat(
         tools=tools, 
         call_llm_func=call_llm_func, 
         json_mode=json_mode,
+        tool_choice=tool_choice,
         tool_handler=tool_handler,
         tools_collection=tools_collection,
         context_arguments=context_arguments,
