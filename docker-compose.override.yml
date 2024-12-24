@@ -1,0 +1,5 @@
+services:
+  shiny_app:
+    build:
+      context: ./shiny
+      dockerfile: Dockerfile 

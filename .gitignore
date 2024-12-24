@@ -51,3 +51,6 @@ venv/
 
 # .env
 .env
+.Rproj.user
+
+shiny/temp/

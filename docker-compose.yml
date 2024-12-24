@@ -75,6 +75,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  shiny_app:
+    image: shiny_app:latest
+    container_name: shiny_app
+    ports:
+      - "3838:3838"
+    depends_on:
+      - radian
+    environment:
+      - SHINY_PORT=3838
+      - CRUDPASSWORD=12345678ABCDEF # TODO
+    networks:
+      - default
+
+
 volumes:
   mongo_data:
   postgres_data:
