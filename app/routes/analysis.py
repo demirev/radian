@@ -1,6 +1,6 @@
 from typing import List, Optional, Literal, Union, Dict
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
-from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage
+from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage, AnalysisSessionSummary
 from app.core.tools import analysis_function_dictionary
 from magenta.routes.chats import create_chat, delete_chat, send_chat
 from magenta.core.config import tenant_collections, logger
@@ -8,6 +8,7 @@ from magenta.core.models import ChatMessage, TaskStatus
 from magenta.services.chat_service import process_chat
 from datetime import datetime
 import uuid
+from pydantic import BaseModel
 
 
 analysis_router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -36,9 +37,12 @@ async def list_analysis_sessions(
 
 @analysis_router.post("/", response_model=AnalysisSession)
 async def create_analysis_session(
-  context_id: str, 
+  context_id: str,
+  user_id: str,
   tenant_id: str = "default",
-  sysprompt_id: str = "radiant0"
+  sysprompt_id: str = "radiant0",
+  title: Optional[str] = None,
+  description: Optional[str] = None
 ):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
@@ -57,9 +61,12 @@ async def create_analysis_session(
   analysis_session = AnalysisSession(
     context_id=context_id,
     session_id=session_id,
+    user_id=user_id,
     tenant_id=tenant_id,
     sysprompt_id=sysprompt_id,
     chat_id=chat["chat_id"],
+    title=title,
+    description=description
   )
   
   analysis_collection.insert_one(analysis_session.model_dump(exclude_none=True))
@@ -232,3 +239,50 @@ async def get_code_from_analysis_session(session_id: str, message_id: str, tenan
   
   code_message_object = CodePairMessage(**code_message["code_snippets"][0])
   return code_message_object
+
+
+@analysis_router.put("/{session_id}", response_model=AnalysisSession)
+async def update_analysis_session(
+    session_id: str,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    tenant_id: str = "default"
+):
+    analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+    
+    # Build update dictionary with only provided fields
+    update_fields = {}
+    if title is not None:
+        update_fields["title"] = title
+    if description is not None:
+        update_fields["description"] = description
+        
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update provided")
+
+    result = analysis_collection.find_one_and_update(
+        {"session_id": session_id},
+        {"$set": update_fields},
+        return_document=True,
+        projection={"_id": 0}
+    )
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Analysis session not found")
+    
+    return AnalysisSession(**result)
+
+
+@analysis_router.get("/user/{user_id}/sessions", response_model=List[AnalysisSessionSummary])
+async def list_user_analysis_sessions(
+    user_id: str,
+    tenant_id: str = "default"
+):
+    analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+    
+    sessions = analysis_collection.find(
+        {"user_id": user_id},
+        {"session_id": 1, "title": 1, "description": 1, "_id": 0}
+    )
+    
+    return [AnalysisSessionSummary(**session) for session in sessions]

@@ -53,15 +53,28 @@ def test_create_get_and_delete_analysis_session():
 	# Create analysis session
 	create_response = client.post("/analysis/", params={
 		"context_id": "test_context",
+		"user_id": "test_user_id",
 		"tenant_id": "default",
-		"sysprompt_id": "radian0"
+		"sysprompt_id": "radian0",
+		"title": "Test Session",
+		"description": "Test Description"
 	})
 	assert create_response.status_code == 200
 	
 	session_id = create_response.json()["session_id"]
 	assert create_response.json()["context_id"] == "test_context"
-	assert create_response.json()["tenant_id"] == "default"
-	assert create_response.json()["sysprompt_id"] == "radian0"
+	assert create_response.json()["user_id"] == "test_user_id"
+	assert create_response.json()["title"] == "Test Session"
+	assert create_response.json()["description"] == "Test Description"
+	
+	# Test PUT endpoint to update title and description
+	update_response = client.put(f"/analysis/{session_id}", params={
+		"title": "Updated Title",
+		"description": "Updated Description"
+	})
+	assert update_response.status_code == 200
+	assert update_response.json()["title"] == "Updated Title"
+	assert update_response.json()["description"] == "Updated Description"
 	
 	# List analysis sessions
 	list_response = client.get("/analysis/")
@@ -91,10 +104,50 @@ def test_create_get_and_delete_analysis_session():
 	assert get_deleted_response.status_code == 404
 
 
+def test_user_analysis_sessions_summary():
+	# Create multiple sessions for the same user
+	user_id = "test_user_id"
+	sessions = []
+	
+	for i in range(3):
+		session = client.post("/analysis/", params={
+			"context_id": f"test_context_{i}",
+			"user_id": user_id,
+			"tenant_id": "default",
+			"sysprompt_id": "radian0",
+			"title": f"Test Session {i}",
+			"description": f"Test Description {i}"
+		}).json()
+		sessions.append(session)
+	
+	# Get summaries for user
+	summary_response = client.get(f"/analysis/user/{user_id}/sessions")
+	assert summary_response.status_code == 200
+	summaries = summary_response.json()
+	
+	# Verify response
+	assert len(summaries) >= 3  # Could be more if other tests left sessions
+	for i, session in enumerate(sessions):
+		matching_summary = next(
+			(s for s in summaries if s["session_id"] == session["session_id"]),
+			None
+		)
+		assert matching_summary is not None
+		assert matching_summary["title"] == f"Test Session {i}"
+		assert matching_summary["description"] == f"Test Description {i}"
+		assert "messages" not in matching_summary  # Ensure only summary fields are returned
+		assert "code_snippets" not in matching_summary
+	
+	# Clean up
+	for session in sessions:
+		client.delete(f"/analysis/{session['session_id']}")
+
+
 def test_analysis_session_messages():
 	# Create session first
 	session = client.post("/analysis/", params={
 		"context_id": "test_context",
+		"user_id": "test_user_id",
 		"tenant_id": "default",
 		"sysprompt_id": "radian0"
 	}).json()
@@ -132,6 +185,7 @@ def test_analysis_session_code():
 	# Create session first
 	session = client.post("/analysis/", params={
 		"context_id": "test_context",
+		"user_id": "test_user_id",
 		"tenant_id": "default",
 		"sysprompt_id": "radian0"
 	}).json()

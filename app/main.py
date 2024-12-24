@@ -17,6 +17,7 @@ from magenta.core import (
     create_postgres_extensions, load_all_functions_in_db, cleanup_mongo
 )
 from magenta.services import load_prompts_from_files
+from magenta.routes.chats import chats_router
 from app.routes.analysis import analysis_router
 from app.core.tools import analysis_function_dictionary, analysis_function_tool_definitions
 
@@ -53,7 +54,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Include magenta routers
 app.include_router(analysis_router)
-
+app.include_router(chats_router)
 
 @app.get("/")
 async def read_root():

@@ -28,6 +28,9 @@ class CodePairMessage(ChatMessage):
 class AnalysisSession(BaseModel):
   session_id: str
   context_id: str
+  user_id: str
+  title: str | None = None
+  description: str | None = None
   messages: list[ChatMessage] | None = None
   code_snippets: list[CodePairMessage] | None = None
   sysprompt_id: str = "radiant0"
@@ -43,3 +46,7 @@ class AnalysisResponse(BaseModel):
   code_suggestion: CodeSnippet | None = None
 
 
+class AnalysisSessionSummary(BaseModel):
+    session_id: str
+    title: str | None = None
+    description: str | None = None
