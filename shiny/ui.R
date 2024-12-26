@@ -1,5 +1,5 @@
 page_ui <- dashboardPage(
-  options = list(sidebarExpandOnHover = TRUE),
+  #options = list(sidebarExpandOnHover = TRUE),
   skin = "black",
   header = dashboardHeader(
     title = "Radian",
@@ -13,7 +13,12 @@ page_ui <- dashboardPage(
       actionLink("settings", label=icon("cog"))
     )
   ),
-  sidebar = dashboardSidebar(disable = T),
+  sidebar = dashboardSidebar(
+    disable = TRUE,
+    width = 0,
+    collapsed = TRUE,
+    minified = FALSE
+  ),
   body = dashboardBody(
     tags$script(HTML("
       $(document).on('click', '.dropdown-menu', function (e) {
@@ -23,7 +28,8 @@ page_ui <- dashboardPage(
     tags$style(
       type = "text/css",
       ".shiny-output-error { visibility: hidden; }",
-      ".shiny-output-error:before { visibility: hidden; }"
+      ".shiny-output-error:before { visibility: hidden; }",
+      ".sidebar-collapse .main-sidebar { display: none !important; }"
     ),
     #shinyDashboardThemes(
     #  theme = 'grey_light' # c('blue_gradient','flat_red','grey_light','grey_dark','onenote','poor_mans_flatly','purple_gradient')
