@@ -170,30 +170,40 @@ Current Recommendation:
 ### Project Structure
 - Each project represents a distinct analysis workflow
 - Project components:
-  - Name (optional, auto-generated if not provided)
+  - Session ID (UUID)
+  - Title (optional)
   - Description (optional)
-  - Associated AI conversations
-  - Code execution history
-  - Analysis results
+  - Context ID (maps to user ID)
+  - Tenant ID
+  - Associated chat ID
+  - Code execution history (planned)
+  - Analysis results (planned)
 - Projects map to `analysis` objects in the backend API
 
 ### Project Interface
 - Project selector:
-  - Modal dialog triggered by UI control (e.g., button in header)
-  - Lists existing projects with names/descriptions
+  - Dropdown menu in main header
+  - Shows current project name or "Select Project"
+  - Lists existing projects with titles/descriptions
   - Option to create new project
   - Search/filter capabilities (planned)
-- Current project indicator:
-  - Displays active project name in app header
-  - Visual indicator for unsaved changes (planned)
-- Default naming scheme:
-  - Format: "Analysis_YYYYMMDD_HHMMSS"
-  - Example: "Analysis_20240315_143022"
+- Project creation:
+  - Modal dialog with:
+    - Optional title field
+    - Optional description field
+  - Success/error feedback via alerts
+  - Auto-refresh of project list on creation
 
 ### Project State Management
 - Active project state maintained in session
+- Projects filtered by user's context_id
 - Auto-save capabilities (planned)
 - Project history tracking (planned)
+
+### API Integration
+- GET `/analysis/` - List user's projects (filtered by context_id)
+- POST `/analysis/` - Create new project
+- GET `/analysis/{session_id}` - Get project details
 
 ## Security
 - OAuth2 authentication
