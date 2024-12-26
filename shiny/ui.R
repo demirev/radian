@@ -5,8 +5,12 @@ page_ui <- dashboardPage(
     title = "Radian",
     titleWidth = 300,
     tags$li(
+      class = "dropdown",
+      project_selector_ui("project_selector")
+    ),
+    tags$li(
       class = "dropdown navbar-custom-menu",
-      actionLink("settings", icon("cog"))
+      actionLink("settings", label=icon("cog"))
     )
   ),
   sidebar = dashboardSidebar(disable = T),
@@ -21,9 +25,9 @@ page_ui <- dashboardPage(
       ".shiny-output-error { visibility: hidden; }",
       ".shiny-output-error:before { visibility: hidden; }"
     ),
-    shinyDashboardThemes(
-      theme = 'grey_light' # c('blue_gradient','flat_red','grey_light','grey_dark','onenote','poor_mans_flatly','purple_gradient')
-    ),
+    #shinyDashboardThemes(
+    #  theme = 'grey_light' # c('blue_gradient','flat_red','grey_light','grey_dark','onenote','poor_mans_flatly','purple_gradient')
+    #),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "radian.css"),
       tags$link(rel = "shortcut icon", href = "radian_logo_positiv_symbol.svg")
@@ -59,7 +63,7 @@ page_ui <- dashboardPage(
   controlbar = NULL,
   footer = dashboardFooter(
     left = "georgi[underscore]demirev[at]proton[dot]me",
-    right = glue("github.com/demirev/radian")
+    right = glue("https://github.com/demirev/radian")
   ),
   title = "Radian"
 )

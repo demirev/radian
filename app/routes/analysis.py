@@ -14,7 +14,7 @@ from pydantic import BaseModel
 analysis_router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
-@analysis_router.get("/", response_model=List[AnalysisSession])
+@analysis_router.get("/", response_model=List[AnalysisSessionSummary])
 async def list_analysis_sessions(
   session_id: Optional[str] = Query(None, title="Session ID", description="Filter by session ID"),
   context_id: Optional[str] = Query(None, title="Context ID", description="Filter by context ID"),
@@ -38,9 +38,8 @@ async def list_analysis_sessions(
 @analysis_router.post("/", response_model=AnalysisSession)
 async def create_analysis_session(
   context_id: str,
-  user_id: str,
   tenant_id: str = "default",
-  sysprompt_id: str = "radiant0",
+  sysprompt_id: str = "radian0",
   title: Optional[str] = None,
   description: Optional[str] = None
 ):
@@ -51,7 +50,7 @@ async def create_analysis_session(
 
   # create a chat
   chat = await create_chat(
-    chat_id=session_id, # match the session id of the analysis session object
+    chat_id=session_id,
     context_id=context_id,
     tenant_id=tenant_id,
     sysprompt_id=sysprompt_id
@@ -61,7 +60,6 @@ async def create_analysis_session(
   analysis_session = AnalysisSession(
     context_id=context_id,
     session_id=session_id,
-    user_id=user_id,
     tenant_id=tenant_id,
     sysprompt_id=sysprompt_id,
     chat_id=chat["chat_id"],
@@ -271,18 +269,3 @@ async def update_analysis_session(
         raise HTTPException(status_code=404, detail="Analysis session not found")
     
     return AnalysisSession(**result)
-
-
-@analysis_router.get("/user/{user_id}/sessions", response_model=List[AnalysisSessionSummary])
-async def list_user_analysis_sessions(
-    user_id: str,
-    tenant_id: str = "default"
-):
-    analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
-    
-    sessions = analysis_collection.find(
-        {"user_id": user_id},
-        {"session_id": 1, "title": 1, "description": 1, "_id": 0}
-    )
-    
-    return [AnalysisSessionSummary(**session) for session in sessions]

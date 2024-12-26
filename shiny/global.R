@@ -29,6 +29,7 @@ source("modules/conversation_module.R")
 source("modules/notebook_module.R")
 source("modules/environment_module.R")
 source("modules/data_module.R")
+source("modules/project_selector_module.R")
 
 is_local <- (Sys.getenv("SHINY_PORT") == "")
 envPass <- Sys.getenv("CRUDPASSWORD") # not used yet

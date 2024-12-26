@@ -26,16 +26,15 @@ class CodePairMessage(ChatMessage):
 
 
 class AnalysisSession(BaseModel):
-  session_id: str
-  context_id: str
-  user_id: str
-  title: str | None = None
-  description: str | None = None
-  messages: list[ChatMessage] | None = None
-  code_snippets: list[CodePairMessage] | None = None
-  sysprompt_id: str = "radiant0"
-  chat_id: str | None = None
-  tenant_id: str = "default"
+    session_id: str
+    context_id: str
+    title: str | None = None
+    description: str | None = None
+    messages: list[ChatMessage] | None = None
+    code_snippets: list[CodePairMessage] | None = None
+    sysprompt_id: str = "radiant0"
+    chat_id: str | None = None
+    tenant_id: str = "default"
 
 
 class AnalysisResponse(BaseModel):
@@ -48,5 +47,6 @@ class AnalysisResponse(BaseModel):
 
 class AnalysisSessionSummary(BaseModel):
     session_id: str
+    context_id: str
     title: str | None = None
     description: str | None = None
