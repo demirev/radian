@@ -123,6 +123,18 @@ def test_analysis_session_messages():
 	assert send_response.status_code == 200
 	message_id = send_response.json()["task_id"]
 	
+	# Add a second message
+	second_message = "Second test message"
+	second_response = client.post(
+		f"/analysis/{session_id}/messages",
+		params={
+			"message": second_message,
+			"dry_run": True
+		}
+	)
+	assert second_response.status_code == 200
+	second_message_id = second_response.json()["task_id"]
+	
 	# List messages
 	list_response = client.get(f"/analysis/{session_id}/messages")
 	assert list_response.status_code == 200
@@ -134,6 +146,49 @@ def test_analysis_session_messages():
 	assert get_response.status_code == 200
 	assert get_response.json()["message_id"] == message_id
 	assert get_response.json()["content"] == message
+	
+	# Test message status endpoints
+	# Get single message status
+	status_response = client.get(f"/analysis/{session_id}/messages/status", params={
+		"message_ids": [message_id]
+	})
+	assert status_response.status_code == 200
+	assert message_id in status_response.json()
+	assert "status" in status_response.json()[message_id]
+	
+	# Get latest message status (no message_ids parameter)
+	latest_status_response = client.get(f"/analysis/{session_id}/messages/status")
+	assert latest_status_response.status_code == 200
+	assert len(latest_status_response.json()) == 1
+	assert "status" in list(latest_status_response.json().values())[0]
+	
+	# Test filtering by message_id
+	filtered_by_id_response = client.get(
+		f"/analysis/{session_id}/messages",
+		params={"since_message_id": message_id}
+	)
+	assert filtered_by_id_response.status_code == 200
+	filtered_messages = filtered_by_id_response.json()
+	assert len(filtered_messages) == 1
+	assert filtered_messages[0]["message_id"] == second_message_id
+	
+	# Test filtering with non-existent message_id
+	non_existent_response = client.get(
+		f"/analysis/{session_id}/messages",
+		params={"since_message_id": "non_existent_id"}
+	)
+	assert non_existent_response.status_code == 404
+	
+	# Test filtering by timestamp
+	first_message_timestamp = client.get(f"/analysis/{session_id}/messages/{message_id}").json()["timestamp"]
+	filtered_by_time_response = client.get(
+		f"/analysis/{session_id}/messages",
+		params={"since_timestamp": first_message_timestamp}
+	)
+	assert filtered_by_time_response.status_code == 200
+	time_filtered_messages = filtered_by_time_response.json()
+	assert len(time_filtered_messages) == 1
+	assert time_filtered_messages[0]["message_id"] == second_message_id
 	
 	# Clean up
 	client.delete(f"/analysis/{session_id}")

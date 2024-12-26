@@ -2,9 +2,9 @@ from typing import List, Optional, Literal, Union, Dict
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage, AnalysisSessionSummary
 from app.core.tools import analysis_function_dictionary
-from magenta.routes.chats import create_chat, delete_chat, send_chat
+from magenta.routes.chats import create_chat, delete_chat, send_chat, get_chat_message_status, get_chat_status
 from magenta.core.config import tenant_collections, logger
-from magenta.core.models import ChatMessage, TaskStatus
+from magenta.core.models import ChatMessage, Task
 from magenta.services.chat_service import process_chat
 from datetime import datetime
 import uuid
@@ -95,14 +95,31 @@ async def delete_analysis_session(session_id: str, tenant_id: str = "default"):
 
 
 @analysis_router.get("/{session_id}/messages", response_model=List[ChatMessage])
-async def get_messages_from_analysis_session(session_id: str, tenant_id: str = "default"):
-  analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+async def get_messages_from_analysis_session(
+	session_id: str,
+	since_timestamp: Optional[datetime] = Query(None, description="Filter messages after this timestamp"),
+	since_message_id: Optional[str] = Query(None, description="Filter messages after this message ID"),
+	tenant_id: str = "default"
+):
+	analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
-  messages = analysis_collection.find_one({"session_id": session_id}, {"messages": 1, "_id": 0})
-  if not messages:
-    raise HTTPException(status_code=404, detail="No messages found")
-  
-  return [ChatMessage(**message) for message in messages["messages"]]
+	messages = analysis_collection.find_one({"session_id": session_id}, {"messages": 1, "_id": 0})
+	if not messages or "messages" not in messages:
+		raise HTTPException(status_code=404, detail="No messages found")
+	
+	filtered_messages = messages["messages"]
+	
+	if since_timestamp:
+		filtered_messages = [m for m in filtered_messages if m["timestamp"] > since_timestamp]
+	
+	if since_message_id:
+		try:
+			message_index = next(i for i, m in enumerate(messages["messages"]) if m["message_id"] == since_message_id)
+			filtered_messages = messages["messages"][message_index + 1:]
+		except StopIteration:
+			raise HTTPException(status_code=404, detail=f"Message with ID {since_message_id} not found")
+	
+	return [ChatMessage(**message) for message in filtered_messages]
 
 
 @analysis_router.post("/{session_id}/messages", response_model=Dict[str, str])
@@ -246,26 +263,53 @@ async def update_analysis_session(
     description: Optional[str] = None,
     tenant_id: str = "default"
 ):
-    analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
-    
-    # Build update dictionary with only provided fields
-    update_fields = {}
-    if title is not None:
-        update_fields["title"] = title
-    if description is not None:
-        update_fields["description"] = description
-        
-    if not update_fields:
-        raise HTTPException(status_code=400, detail="No fields to update provided")
+  analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+  
+  # Build update dictionary with only provided fields
+  update_fields = {}
+  if title is not None:
+    update_fields["title"] = title
+  if description is not None:
+    update_fields["description"] = description
+      
+  if not update_fields:
+    raise HTTPException(status_code=400, detail="No fields to update provided")
 
-    result = analysis_collection.find_one_and_update(
-        {"session_id": session_id},
-        {"$set": update_fields},
-        return_document=True,
-        projection={"_id": 0}
-    )
+  result = analysis_collection.find_one_and_update(
+    {"session_id": session_id},
+    {"$set": update_fields},
+    return_document=True,
+    projection={"_id": 0}
+  )
+  
+  if not result:
+    raise HTTPException(status_code=404, detail="Analysis session not found")
+  
+  return AnalysisSession(**result)
+
+
+@analysis_router.get("/{session_id}/messages/status", response_model=Dict[str, Task])
+async def get_analysis_session_message_statuses(
+    session_id: str,
+    message_ids: Optional[List[str]] = Query(None),
+    status: Optional[str] = Query(None, description="Filter by status (e.g., 'pending', 'completed')"),
+    tenant_id: str = "default"
+):
+  if not message_ids:
+    # If no message IDs provided, return only the latest status
+    latest_status = await get_chat_status(session_id, tenant_id)
+    if status is None or latest_status["status"] == status:
+      return {latest_status["task_id"]: latest_status}
+    return {}
+
+  # Get status for each message ID
+  result = {}
+  for message_id in message_ids:
+    try:
+      message_status = await get_chat_message_status(session_id, message_id, tenant_id)
+      if status is None or message_status["status"] == status:
+        result[message_id] = message_status
+    except HTTPException:
+      continue
     
-    if not result:
-        raise HTTPException(status_code=404, detail="Analysis session not found")
-    
-    return AnalysisSession(**result)
+  return result
