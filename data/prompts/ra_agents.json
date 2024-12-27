@@ -1,6 +1,6 @@
 [
   {
-    "prompt_id":"radian0",
+    "prompt_id":"radian2",
     "name":"Radian",
     "type":"agent",
     "description":"This is an assistant that helps the user conduct analysis on their data.",
@@ -16,7 +16,7 @@
     "toolset":["send_user_message", "run_code", "suggest_code"]
   },
   {
-    "prompt_id": "radian2",
+    "prompt_id": "radian0",
     "name": "Radian",
     "type": "agent",
     "description": "This is an assistant that helps the user conduct analysis on their data.",

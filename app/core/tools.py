@@ -14,14 +14,14 @@ def suggest_code(tenant_id: str, session_id: str, code: str, language: str):
     raise ValueError(f"Analysis object not found for session {session_id}")
   
   new_code_suggestion = CodePairMessage(
-    message_id=uuid.uuid4(),
+    message_id=str(uuid.uuid4()),
     content=code,
     role="assistant",
     timestamp=datetime.now(),
     type="code_pair",
     code_pair=CodePair(
       input=CodeSnippet(
-        message_id=uuid.uuid4(),
+        message_id=str(uuid.uuid4()),
         role="assistant",
         type="suggestion",
         language=language,
@@ -35,6 +35,8 @@ def suggest_code(tenant_id: str, session_id: str, code: str, language: str):
     {"$push": {"code_snippets": new_code_suggestion.model_dump(exclude_none=True)}}
   )
 
+  return "code suggestion submitted successfully"
+
 
 def run_code(tenant_id: str, session_id: str, code: str, language: str):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
@@ -44,14 +46,14 @@ def run_code(tenant_id: str, session_id: str, code: str, language: str):
     raise ValueError(f"Analysis object not found for session {session_id}")
   
   new_code_execution = CodePairMessage(
-    message_id=uuid.uuid4(),
+    message_id=str(uuid.uuid4()),
     content=code,
     role="assistant",
     timestamp=datetime.now(),
     type="code_pair",
     code_pair=CodePair(
       input=CodeSnippet(
-        message_id=uuid.uuid4(),
+        message_id=str(uuid.uuid4()),
         role="assistant",
         type="execution",
         language=language,
@@ -65,6 +67,8 @@ def run_code(tenant_id: str, session_id: str, code: str, language: str):
     {"$push": {"code_snippets": new_code_execution.model_dump(exclude_none=True)}}
   )
 
+  return "code execution submitted successfully"
+
 
 def send_user_message(tenant_id: str, session_id: str, message: str):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
@@ -74,7 +78,7 @@ def send_user_message(tenant_id: str, session_id: str, message: str):
     raise ValueError(f"Analysis object not found for session {session_id}")
   
   new_user_message = ChatMessage(
-    message_id=uuid.uuid4(),
+    message_id=str(uuid.uuid4()),
     content=message,
     role="assistant",
     timestamp=datetime.now()
@@ -84,6 +88,8 @@ def send_user_message(tenant_id: str, session_id: str, message: str):
     {"session_id": session_id},
     {"$push": {"messages": new_user_message.model_dump(exclude_none=True)}}
   )
+
+  return "message sent successfully"
 
 # function schemas -----------------------------------
 analysis_function_tool_definitions = [

@@ -133,6 +133,7 @@ async def add_message_to_analysis_session(
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
   message_to_process = "[USER MESSAGE]\n\n" + message # add a prefix to the message to indicate to the LLM that this is a user message
+  message_to_process = message_to_process + "\n\n[HINT:USE send_user_message TO RESPOND]"
 
   message_id = str(uuid.uuid4())
   
