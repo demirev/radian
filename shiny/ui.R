@@ -62,7 +62,10 @@ page_ui <- dashboardPage(
     ),
     shinybrowser::detect(),
     fluidRow(
-      column(4),
+      column(
+        4,
+        conversation_ui("conversation")
+      ),
       column(8)
     )
   ),

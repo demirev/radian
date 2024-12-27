@@ -28,9 +28,11 @@ server <- function(input, output, session) {
 			# Set the user data in the session
 			session$userData$user <- user()
 			
-			selected_project <- project_selector_server("project_selector", api_url, tenant_id)
+			selected_project <- project_selector_server(
+		    "project_selector", api_url, tenant_id
+			)
 			
-			#conversation_server("conversation", selected_project, api_url, tenant_id)
+			conversation_server("conversation", selected_project, api_url, tenant_id)
 			#data_server("data", selected_project, api_url, tenant_id)
 			#environment_server("environment", selected_project, api_url, tenant_id)
 			#notebook_server("notebook", selected_project, api_url, tenant_id)
