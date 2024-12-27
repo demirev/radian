@@ -167,6 +167,33 @@ async def add_message_to_analysis_session(
   return {"task_id": message_id, "status": "success"}
 
 
+@analysis_router.get("/{session_id}/messages/status", response_model=Dict[str, Task])
+async def get_analysis_session_message_statuses(
+    session_id: str,
+    message_ids: Optional[List[str]] = Query(None),
+    status: Optional[str] = Query(None, description="Filter by status (e.g., 'pending', 'completed')"),
+    tenant_id: str = "default"
+):
+  if not message_ids:
+    # If no message IDs provided, return only the latest status
+    latest_status = await get_chat_status(session_id, tenant_id)
+    if status is None or latest_status["status"] == status:
+      return {latest_status["task_id"]: latest_status}
+    return {}
+
+  # Get status for each message ID
+  result = {}
+  for message_id in message_ids:
+    try:
+      message_status = await get_chat_message_status(session_id, message_id, tenant_id)
+      if status is None or message_status["status"] == status:
+        result[message_id] = message_status
+    except HTTPException:
+      continue
+    
+  return result
+
+
 @analysis_router.get("/{session_id}/messages/{message_id}", response_model=ChatMessage)
 async def get_message_from_analysis_session(session_id: str, message_id: str, tenant_id: str = "default"):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
@@ -286,30 +313,3 @@ async def update_analysis_session(
     raise HTTPException(status_code=404, detail="Analysis session not found")
   
   return AnalysisSession(**result)
-
-
-@analysis_router.get("/{session_id}/messages/status", response_model=Dict[str, Task])
-async def get_analysis_session_message_statuses(
-    session_id: str,
-    message_ids: Optional[List[str]] = Query(None),
-    status: Optional[str] = Query(None, description="Filter by status (e.g., 'pending', 'completed')"),
-    tenant_id: str = "default"
-):
-  if not message_ids:
-    # If no message IDs provided, return only the latest status
-    latest_status = await get_chat_status(session_id, tenant_id)
-    if status is None or latest_status["status"] == status:
-      return {latest_status["task_id"]: latest_status}
-    return {}
-
-  # Get status for each message ID
-  result = {}
-  for message_id in message_ids:
-    try:
-      message_status = await get_chat_message_status(session_id, message_id, tenant_id)
-      if status is None or message_status["status"] == status:
-        result[message_id] = message_status
-    except HTTPException:
-      continue
-    
-  return result

@@ -52,5 +52,7 @@ venv/
 # .env
 .env
 .Rproj.user
+.Rhistory
+shiny/.Rhistory
 
 shiny/temp/
