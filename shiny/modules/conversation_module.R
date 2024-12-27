@@ -2,37 +2,67 @@ conversation_ui <- function(id) {
 	ns <- NS(id)
 	
 	tagList(
-		# Message display area with scroll
 		div(
-			id = ns("message_container"),
-			class = "message-container",
-			uiOutput(ns("messages"))
+			id = ns("no_project_message"),
+			class = "no-project-message",
+			icon("comments"),
+			tags$p("Select a project to start chatting"),
+			style = "text-align: center; padding: 2rem; color: #666;"
 		),
 		
-		# Input area
 		div(
-			class = "message-input-container",
-			textAreaInput(
-				ns("message_input"),
-				label = NULL,
-				placeholder = "Type your message...",
-				resize = "vertical",
-				width = "100%"
+			id = ns("chat_wrapper"),
+			style = "display: none;",
+			
+			div(
+				id = ns("message_container"),
+				class = "message-container",
+				uiOutput(ns("messages"))
 			),
-			actionButton(
-				ns("send_message"),
-				"Send",
-				icon = icon("paper-plane"),
-				class = "btn-primary"
+			div(
+				class = "message-input-container",
+				textAreaInput(
+					ns("message_input"),
+					label = NULL,
+					placeholder = "Type your message...",
+					resize = "vertical",
+					width = "100%"
+				),
+				actionButton(
+					ns("send_message"),
+					"Send",
+					icon = icon("paper-plane"),
+					class = "btn-primary"
+				)
 			)
 		)
 	)
 }
 
-
 conversation_server <- function(id, selected_project, api_url, tenant_id) {
 	moduleServer(id, function(input, output, session) {
 		ns <- session$ns
+		
+		# Watch for project selection
+		observe({
+			if (!is.null(selected_project())) {
+				runjs(sprintf("
+					document.getElementById('%s').style.display = 'none';
+					document.getElementById('%s').style.display = 'block';
+				", ns("no_project_message"), ns("chat_wrapper")))
+			} else {
+				runjs(sprintf("
+					document.getElementById('%s').style.display = 'block';
+					document.getElementById('%s').style.display = 'none';
+				", ns("no_project_message"), ns("chat_wrapper")))
+				
+				# Reset state when no project selected
+				messages(NULL)
+				pending_messages(list())
+				last_timestamp(NULL)
+				last_message_id(NULL)
+			}
+		})
 		
 		# Reactive values
 		messages <- reactiveVal(NULL)
@@ -224,7 +254,8 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		output$messages <- renderUI({
 			req(messages())
 			
-			tagList(
+			# Create message list
+			msg_list <- tagList(
 				map(seq_len(nrow(messages())), function(i) {
 					msg <- messages()[i,]
 					is_user <- msg$role == "user"
@@ -248,6 +279,18 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 					)
 				})
 			)
+			
+			# Add auto-scroll after rendering
+			runjs("
+				setTimeout(function() {
+					var container = document.getElementById('conversation-message_container');
+					if (container) {
+						container.scrollTop = container.scrollHeight;
+					}
+				}, 100);
+			")
+			
+			msg_list
 		})
 		
 		# Return messages for other modules

@@ -153,8 +153,17 @@ Current Recommendation:
        - Different background colors for user/agent
        - Timestamps for all messages
        - Full markdown support including code blocks
-     - Scrollable message history
+     - Scrollable message history with auto-scroll on new messages
      - Input area at bottom
+     - State management:
+       - Hidden when no project selected
+       - Shows guidance message to select project
+       - Resets state on project change
+     - Message handling:
+       - Dynamic polling for pending messages
+       - Immediate polling after sending message
+       - Background polling for server-initiated messages
+       - Event-triggered polling on code execution and project selection
 
   2. Monologue Tab
      - Internal agent messages
