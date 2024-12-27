@@ -29,8 +29,10 @@ server <- function(input, output, session) {
 			session$userData$user <- user()
 			
 			selected_project <- project_selector_server(
-		    "project_selector", api_url, tenant_id
+				"project_selector", api_url, tenant_id
 			)
+			
+			delete_project_server("delete_project", selected_project, api_url, tenant_id)
 			
 			conversation_server("conversation", selected_project, api_url, tenant_id)
 			#data_server("data", selected_project, api_url, tenant_id)

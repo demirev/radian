@@ -21,6 +21,7 @@ library(DT)
 library(RCurl)
 library(jsonlite)
 library(glue)
+library(shinyWidgets)
 
 source("services/auth.R")
 source("services/utilities.R")
@@ -30,6 +31,7 @@ source("modules/notebook_module.R")
 source("modules/environment_module.R")
 source("modules/data_module.R")
 source("modules/project_selector_module.R")
+source("modules/delete_project_module.R")
 
 is_local <- (Sys.getenv("SHINY_PORT") == "")
 envPass <- Sys.getenv("CRUDPASSWORD") # not used yet

@@ -10,7 +10,18 @@ page_ui <- dashboardPage(
     ),
     tags$li(
       class = "dropdown navbar-custom-menu",
-      actionLink("settings", label=icon("cog"))
+      tags$a(
+        href = "#",
+        class = "dropdown-toggle",
+        `data-toggle` = "dropdown",
+        icon("cog")
+      ),
+      tags$ul(
+        class = "dropdown-menu",
+        tags$li(
+          delete_project_ui("delete_project")
+        )
+      )
     )
   ),
   sidebar = dashboardSidebar(

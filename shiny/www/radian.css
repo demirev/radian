@@ -389,3 +389,41 @@ body, html {
 	font-size: 1.45rem;
 }
 
+/* Delete project button styling */
+.text-danger {
+	color: #e74c3c !important;  /* Red color for dangerous actions */
+}
+
+.text-danger:hover {
+	color: #c0392b !important;  /* Darker red for hover state */
+	text-decoration: none;
+}
+
+/* Danger button in modal */
+.btn-danger {
+	background-color: #e74c3c;
+	color: white;
+	border: none;
+}
+
+.btn-danger:hover {
+	background-color: #c0392b;
+	color: white;
+}
+
+/* Settings dropdown specific styles */
+.dropdown-menu .menu li a.text-danger {
+	color: #e74c3c !important;
+}
+
+.dropdown-menu .menu li a.text-danger:hover {
+	background-color: #fef5f4;  /* Light red background on hover */
+}
+
+/* Icon alignment in dropdown menu */
+.dropdown-menu .menu li a i {
+	width: 16px;  /* Fixed width for icons */
+	text-align: center;
+	margin-right: 8px;
+}
+
