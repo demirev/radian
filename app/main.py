@@ -19,6 +19,7 @@ from magenta.core import (
 from magenta.services import load_prompts_from_files
 from magenta.routes.chats import chats_router
 from app.routes.analysis import analysis_router
+from app.routes.environments import environments_router
 from app.core.tools import analysis_function_dictionary, analysis_function_tool_definitions
 
 
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
     
     # Startup logic
     tenant_collections.add_collection_type("analysis")
+    tenant_collections.add_collection_type("environments")
     await create_postgres_extensions(get_db)
     await load_prompts_from_files(tenant_collections.get_collections_list("prompts"), dir="data/prompts")
     await create_initial_users(users_collection, dir="data/users")
@@ -41,6 +43,7 @@ async def lifespan(app: FastAPI):
         all_function_tool_definitions=analysis_function_tool_definitions
     )
     await cleanup_mongo(tenant_collections.get_collections_list("analysis"),[{"context_id":"test_context"}])
+    await cleanup_mongo(tenant_collections.get_collections_list("environments"),[{"context_id":"test_session"}])
 
     yield
     
@@ -52,9 +55,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 # Include magenta routers
 app.include_router(analysis_router)
+app.include_router(environments_router)
 app.include_router(chats_router)
+
 
 @app.get("/")
 async def read_root():

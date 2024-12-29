@@ -37,6 +37,13 @@ class AnalysisSession(BaseModel):
     tenant_id: str = "default"
 
 
+class SessionEnvFile(BaseModel):
+    session_id: str
+    context_id: str
+    env_file: str | None = None # holds base64 encoded env file
+    tenant_id: str = "default"
+
+
 class AnalysisResponse(BaseModel):
   session_id: str
   response_inner: ChatMessage # the inner dialogue of the assistant

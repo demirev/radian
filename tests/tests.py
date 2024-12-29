@@ -254,3 +254,140 @@ def test_analysis_session_not_found():
 	# Try to get code from non-existent session
 	code_response = client.get(f"/analysis/{non_existent_id}/code")
 	assert code_response.status_code == 404
+
+
+def test_environment_file_operations():
+	# Create analysis session first
+	session = client.post("/analysis/", params={
+		"context_id": "test_context",
+		"tenant_id": "default",
+		"sysprompt_id": "radian0"
+	}).json()
+	session_id = session["session_id"]
+	
+	# Test creating environment file
+	env_data = {
+		"session_id": session_id,
+		"context_id": session["context_id"],
+		"tenant_id": "default",
+		"env_file": "SGVsbG8gV29ybGQ="  # base64 encoded "Hello World"
+	}
+	
+	create_response = client.post(
+		f"/environments/{session_id}",
+		json=env_data
+	)
+	assert create_response.status_code == 200
+	assert create_response.json()["session_id"] == session_id
+	assert create_response.json()["context_id"] == session["context_id"]
+	assert create_response.json()["tenant_id"] == "default"
+	assert create_response.json()["env_file"] == "SGVsbG8gV29ybGQ="
+	
+	# Test getting environment file
+	get_response = client.get(f"/environments/{session_id}")
+	assert get_response.status_code == 200
+	assert get_response.json()["env_file"] == "SGVsbG8gV29ybGQ="
+	assert get_response.json()["context_id"] == session["context_id"]
+	assert get_response.json()["tenant_id"] == "default"
+	
+	# Test updating environment file
+	updated_env_data = {
+		"session_id": session_id,
+		"context_id": session["context_id"],
+		"tenant_id": "default",
+		"env_file": "VXBkYXRlZCBFbnZpcm9ubWVudA=="  # base64 encoded "Updated Environment"
+	}
+	
+	update_response = client.put(
+		f"/environments/{session_id}",
+		json=updated_env_data
+	)
+	assert update_response.status_code == 200
+	assert update_response.json()["env_file"] == "VXBkYXRlZCBFbnZpcm9ubWVudA=="
+	assert update_response.json()["context_id"] == session["context_id"]
+	assert update_response.json()["tenant_id"] == "default"
+	
+	# Verify update
+	get_updated_response = client.get(f"/environments/{session_id}")
+	assert get_updated_response.status_code == 200
+	assert get_updated_response.json()["env_file"] == "VXBkYXRlZCBFbnZpcm9ubWVudA=="
+	
+	# Test deleting environment file
+	delete_response = client.delete(f"/environments/{session_id}")
+	assert delete_response.status_code == 200
+	assert delete_response.json()["status"] == "success"
+	
+	# Verify deletion
+	get_deleted_response = client.get(f"/environments/{session_id}")
+	assert get_deleted_response.status_code == 404
+	
+	# Clean up analysis session
+	client.delete(f"/analysis/{session_id}")
+
+
+def test_environment_error_cases():
+	# Test with non-existent session
+	non_existent_id = "non_existent_session"
+	env_data = {
+		"session_id": non_existent_id,
+		"context_id": "test_context",
+		"tenant_id": "default",
+		"env_file": "SGVsbG8gV29ybGQ="
+	}
+	
+	# Try to create environment for non-existent session
+	create_response = client.post(
+		f"/environments/{non_existent_id}",
+		json=env_data
+	)
+	assert create_response.status_code == 404
+	
+	# Create a valid session for remaining tests
+	session = client.post("/analysis/", params={
+		"context_id": "test_context",
+		"tenant_id": "default",
+		"sysprompt_id": "radian0"
+	}).json()
+	session_id = session["session_id"]
+	
+	# Test invalid base64 encoding
+	invalid_env_data = {
+		"session_id": session_id,
+		"context_id": session["context_id"],
+		"tenant_id": "default",
+		"env_file": "This is not base64!!@#$"  # Invalid base64 string
+	}
+	
+	invalid_response = client.post(
+		f"/environments/{session_id}",
+		json=invalid_env_data
+	)
+	assert invalid_response.status_code == 400
+	
+	# Test duplicate creation
+	# First create a valid environment
+	client.post(
+		f"/environments/{session_id}",
+		json={
+			"session_id": session_id,
+			"context_id": session["context_id"],
+			"tenant_id": "default",
+			"env_file": "SGVsbG8gV29ybGQ="
+		}
+	)
+	
+	# Try to create another one
+	duplicate_response = client.post(
+		f"/environments/{session_id}",
+		json={
+			"session_id": session_id,
+			"context_id": session["context_id"],
+			"tenant_id": "default",
+			"env_file": "SGVsbG8gV29ybGQ="
+		}
+	)
+	assert duplicate_response.status_code == 400
+	
+	# Clean up
+	client.delete(f"/environments/{session_id}")
+	client.delete(f"/analysis/{session_id}")
