@@ -71,7 +71,11 @@ Radian is a proof-of-concept web application built with R Shiny that enables int
 - Four-tab structure:
   1. Code Tab
      - REPL-style interface:
-       - Code input area at bottom
+       - Code input area at bottom (using shinyAce editor):
+         - Syntax highlighting
+         - Auto-completion
+         - Code folding
+         - Line numbers
        - History of executed code and outputs above
        - Each execution pair includes:
          - Input code block (In[n])
@@ -89,6 +93,13 @@ Radian is a proof-of-concept web application built with R Shiny that enables int
        - Scrollable
        - Preserves formatting
        - Collapsible output sections (planned)
+     - Environment Management:
+       - Code executed in isolated environment
+       - Environment state persisted to server:
+         - Auto-save after each execution (optional)
+         - Manual save via UI button
+       - Environment restoration on session start
+       - Environment status indicator
   2. Data Tab
      - Data import interface:
        - File upload control

@@ -77,7 +77,10 @@ page_ui <- dashboardPage(
         4,
         conversation_ui("conversation")
       ),
-      column(8)
+      column(
+        8,
+        notebook_ui("notebook")
+      )
     )
   ),
   controlbar = NULL,
