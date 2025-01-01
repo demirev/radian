@@ -9,62 +9,67 @@ notebook_ui <- function(id) {
   ns <- NS(id)
   
   div(
-    class = "notebook-container",
+    id = ns("notebook_wrapper"),
+    style = "display: none;",  # Hidden by default
     useShinyjs(),
-    # Add JavaScript for auto-scrolling
-    tags$script(HTML("
-      Shiny.addCustomMessageHandler('scrollToBottom', function(message) {
-        var container = document.querySelector(message.selector);
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
-      });
-    ")),
-    # Environment controls
+    
     div(
-      class = "environment-controls",
+      class = "notebook-container",
+      tags$script(HTML("
+        Shiny.addCustomMessageHandler('scrollToBottom', function(message) {
+          var container = document.querySelector(message.selector);
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
+      ")),
+      
+      # Environment controls
       div(
-        class = "env-status",
-        textOutput(ns("env_status"))
-      ),
-      div(
-        actionButton(
-          ns("save_env"),
-          "Save Environment",
-          icon = icon("save"),
-          class = "btn-icon"
+        class = "environment-controls",
+        div(
+          class = "env-status",
+          textOutput(ns("env_status"))
+        ),
+        div(
+          actionButton(
+            ns("save_env"),
+            "Save Environment",
+            icon = icon("save"),
+            class = "btn-icon"
+          )
         )
-      )
-    ),
-    
-    # Execution history
-    div(
-      class = "execution-history",
-      uiOutput(ns("history"))
-    ),
-    
-    # Code editor
-    div(
-      class = "code-editor-container",
-      aceEditor(
-        ns("code_editor"),
-        mode = "r",
-        theme = "chrome",
-        height = "150px",
-        fontSize = 14,
-        tabSize = 2,
-        useSoftTabs = TRUE,
-        showPrintMargin = FALSE,
-        showLineNumbers = TRUE,
-        highlightActiveLine = TRUE
       ),
+      
+      # Execution history
       div(
-        style = "text-align: right; margin-top: 10px;",
-        actionButton(
-          ns("execute_code"),
-          "Execute",
-          icon = icon("play"),
-          class = "btn-primary"
+        class = "execution-history",
+        uiOutput(ns("history"))
+      ),
+      
+      # Code editor
+      div(
+        class = "code-editor-container",
+        aceEditor(
+          ns("code_editor"),
+          mode = "r",
+          theme = "chrome",
+          height = "150px",
+          fontSize = 14,
+          tabSize = 2,
+          useSoftTabs = TRUE,
+          showPrintMargin = FALSE,
+          showLineNumbers = TRUE,
+          highlightActiveLine = TRUE
+        ),
+        div(
+          style = "text-align: right; margin-top: 10px;",
+          actionButton(
+            ns("execute_code"),
+            "Execute",
+            icon = icon("play"),
+            class = "btn-primary"
+          )
         )
       )
     )
@@ -294,6 +299,25 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         type = "scrollToBottom",
         message = list(selector = ".execution-history")
       )
+    })
+    
+    # Watch for project selection
+    observe({
+      if (!is.null(selected_project())) {
+        runjs(sprintf("document.getElementById('%s').style.display = 'block';",
+          ns("notebook_wrapper")
+        ))
+      } else {
+        runjs(sprintf("document.getElementById('%s').style.display = 'none';",
+          ns("notebook_wrapper")
+        ))
+        
+        # Reset state when no project selected
+        rv$history <- list()
+        rv$env_saved <- TRUE
+        rv$execution_count <- 0
+        rv$is_executing <- FALSE
+      }
     })
   })
 }
