@@ -2,6 +2,7 @@ library(shiny)
 library(shinyAce)
 library(jsonlite)
 library(glue)
+library(shinyjs)
 
 
 notebook_ui <- function(id) {
@@ -9,6 +10,7 @@ notebook_ui <- function(id) {
   
   div(
     class = "notebook-container",
+    useShinyjs(),
     # Add JavaScript for auto-scrolling
     tags$script(HTML("
       Shiny.addCustomMessageHandler('scrollToBottom', function(message) {
@@ -78,7 +80,8 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
     rv <- reactiveValues(
       history = list(),
       env_saved = TRUE,
-      execution_count = 0
+      execution_count = 0,
+      is_executing = FALSE
     )
     
     # Initialize safe environment
@@ -151,6 +154,20 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       code <- input$code_editor
       if (nchar(code) == 0) return()
       
+      # Set executing state
+      rv$is_executing <- TRUE
+      
+      # Disable UI elements
+      shinyjs::disable("execute_code")
+      shinyjs::disable("code_editor")
+      shinyjs::disable("save_env")
+      
+      # Show spinner in execute button
+      updateActionButton(session, "execute_code",
+        label = "Executing...",
+        icon = icon("spinner", class = "fa-spin")
+      )
+      
       # Increment execution count
       rv$execution_count <- rv$execution_count + 1
       
@@ -165,6 +182,16 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         status = if (inherits(result, "error")) "error" else "success",
         timestamp = Sys.time(),
         count = rv$execution_count
+      )
+      
+      # Reset UI state
+      rv$is_executing <- FALSE
+      shinyjs::enable("execute_code")
+      shinyjs::enable("code_editor")
+      shinyjs::enable("save_env")
+      updateActionButton(session, "execute_code",
+        label = "Execute",
+        icon = icon("play")
       )
       
       # Clear editor
@@ -214,13 +241,24 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
             tags$pre(
               tags$code(item$output)
             ),
-            span(
-              class = paste("execution-status", paste0("status-", item$status)),
-              item$status
-            ),
             div(
-              class = "code-timestamp",
-              format(item$timestamp, "%Y-%m-%d %H:%M:%S")
+              class = "execution-meta",
+              # Execution type badge
+              span(
+                class = paste("execution-badge", paste0("badge-", item$type)),
+                if(item$type == "agent") icon("robot") else icon("user"),
+                if(item$type == "agent") "Assistant" else "User"
+              ),
+              # Status badge
+              span(
+                class = paste("execution-status", paste0("status-", item$status)),
+                item$status
+              ),
+              # Timestamp
+              div(
+                class = "code-timestamp",
+                format(item$timestamp, "%Y-%m-%d %H:%M:%S")
+              )
             )
           )
         )
