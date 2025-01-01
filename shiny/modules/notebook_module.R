@@ -162,23 +162,24 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       shinyjs::disable("code_editor")
       shinyjs::disable("save_env")
       
-      # Show spinner in execute button
       updateActionButton(session, "execute_code",
         label = "Executing...",
         icon = icon("spinner", class = "fa-spin")
       )
       
-      # Increment execution count
-      rv$execution_count <- rv$execution_count + 1
-      
-      # Execute code
-      result <- run_user_code(code, safe_env)
+      # Execute code with plot capture
+      result <- run_user_code_capture_plots(code, safe_env, device = "png")
       
       # Add to history
       rv$history[[length(rv$history) + 1]] <- list(
         type = "user",
         input = code,
-        output = if (inherits(result, "error")) result$message else result,
+        output = if (inherits(result, "error")) {
+          result$message
+        } else {
+          result$console_output
+        },
+        plots = if (!inherits(result, "error")) result$plots else NULL,
         status = if (inherits(result, "error")) "error" else "success",
         timestamp = Sys.time(),
         count = rv$execution_count
@@ -238,23 +239,44 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
           # Output
           div(
             class = "code-output",
-            tags$pre(
-              tags$code(item$output)
-            ),
+            # Console output
+            if (!is.null(item$output) && nchar(item$output) > 0) {
+              tags$pre(
+                tags$code(item$output)
+              )
+            },
+            # Plots
+            if (!is.null(item$plots) && length(item$plots) > 0) {
+              div(
+                class = "plot-container",
+                lapply(seq_along(item$plots), function(i) {
+                  plotId <- paste0(ns(paste0("plot_", item$count, "_", i)))
+                  div(
+                    class = "plot-wrapper",
+                    # Create a unique ID for each plot
+                    img(
+                      id = plotId,
+                      src = sprintf("data:image/png;base64,%s",
+                        base64enc::base64encode(item$plots[[i]])
+                      ),
+                      class = "plot-image"
+                    )
+                  )
+                })
+              )
+            },
+            # Meta information
             div(
               class = "execution-meta",
-              # Execution type badge
               span(
                 class = paste("execution-badge", paste0("badge-", item$type)),
                 if(item$type == "agent") icon("robot") else icon("user"),
                 if(item$type == "agent") "Assistant" else "User"
               ),
-              # Status badge
               span(
                 class = paste("execution-status", paste0("status-", item$status)),
                 item$status
               ),
-              # Timestamp
               div(
                 class = "code-timestamp",
                 format(item$timestamp, "%Y-%m-%d %H:%M:%S")
