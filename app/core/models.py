@@ -40,7 +40,8 @@ class AnalysisSession(BaseModel):
 class SessionEnvFile(BaseModel):
     session_id: str
     context_id: str
-    env_file: str | None = None # holds base64 encoded env file
+    env_file: str | None = None  # holds base64 encoded env file, maybe not needed
+    file_id: str | None = None   # holds GridFS file ID
     tenant_id: str = "default"
 
 

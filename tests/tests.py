@@ -281,7 +281,10 @@ def test_environment_file_operations():
 	assert create_response.json()["session_id"] == session_id
 	assert create_response.json()["context_id"] == session["context_id"]
 	assert create_response.json()["tenant_id"] == "default"
-	assert create_response.json()["env_file"] == "SGVsbG8gV29ybGQ="
+	# Don't check env_file immediately as it's processed in background
+	
+	# Add small delay to allow background task to complete
+	time.sleep(1)
 	
 	# Test getting environment file
 	get_response = client.get(f"/environments/{session_id}")
@@ -303,9 +306,12 @@ def test_environment_file_operations():
 		json=updated_env_data
 	)
 	assert update_response.status_code == 200
-	assert update_response.json()["env_file"] == "VXBkYXRlZCBFbnZpcm9ubWVudA=="
 	assert update_response.json()["context_id"] == session["context_id"]
 	assert update_response.json()["tenant_id"] == "default"
+	# Don't check env_file immediately as it's processed in background
+	
+	# Add small delay to allow background task to complete
+	time.sleep(1)
 	
 	# Verify update
 	get_updated_response = client.get(f"/environments/{session_id}")
