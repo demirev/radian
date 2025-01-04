@@ -22,6 +22,10 @@ library(RCurl)
 library(jsonlite)
 library(glue)
 library(shinyWidgets)
+library(future)
+library(promises)
+
+plan(multisession)
 
 source("services/auth.R")
 source("services/utilities.R")

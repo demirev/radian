@@ -161,6 +161,21 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       code <- input$code_editor
       if (nchar(code) == 0) return()
       
+      # Increment execution count
+      rv$execution_count <- rv$execution_count + 1
+      current_count <- rv$execution_count
+      
+      # Add to history immediately with just the input
+      rv$history[[length(rv$history) + 1]] <- list(
+        type = "user",
+        input = code,
+        output = "Executing...",
+        plots = NULL,
+        status = "running",  # New status for running state
+        timestamp = Sys.time(),
+        count = current_count
+      )
+      
       # Set executing state
       rv$is_executing <- TRUE
       
@@ -174,16 +189,14 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         icon = icon("spinner", class = "fa-spin")
       )
       
+      # Clear editor immediately
+      updateAceEditor(session, "code_editor", value = "")
+      
       # Execute code with plot capture
       result <- run_user_code_capture_plots(code, safe_env$env, device = "png")
       
-      # update env
-      if (!is.null(result$updated_env)) {
-        list2env(result$updated_env, envir = safe_env$env)
-      }
-      
-      # Add to history
-      rv$history[[length(rv$history) + 1]] <- list(
+      # Update the history entry with results
+      rv$history[[length(rv$history)]] <- list(
         type = "user",
         input = code,
         output = if (inherits(result, "error")) {
@@ -194,7 +207,7 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         plots = if (!inherits(result, "error")) result$plots else NULL,
         status = if (inherits(result, "error")) "error" else "success",
         timestamp = Sys.time(),
-        count = rv$execution_count
+        count = current_count
       )
       
       # Reset UI state
@@ -207,14 +220,8 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         icon = icon("play")
       )
       
-      # Clear editor
-      updateAceEditor(session, "code_editor", value = "")
-      
       # Mark environment as unsaved
       rv$env_saved <- FALSE
-      
-      # Auto-save if enabled
-      # save_environment(auto = TRUE)
     })
     
     # Manual environment save

@@ -484,6 +484,11 @@ body, html {
   color: #c62828;
 }
 
+.status-running {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 .code-editor-container {
   padding: 1rem;
   background: white;
