@@ -1,6 +1,6 @@
 from typing import List, Optional, Literal, Union, Dict
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
-from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage, AnalysisSessionSummary
+from app.core.models import AnalysisSession, CodeSnippet, CodeResponse, CodePair, CodePairMessage, AnalysisSessionSummary, SessionEnvFile
 from app.core.tools import analysis_function_dictionary
 from magenta.routes.chats import create_chat, delete_chat, send_chat, get_chat_message_status, get_chat_status
 from magenta.core.config import tenant_collections, logger
@@ -9,6 +9,7 @@ from magenta.services.chat_service import process_chat
 from datetime import datetime
 import uuid
 from pydantic import BaseModel
+from app.routes.environments import create_environment
 
 
 analysis_router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -38,10 +39,11 @@ async def list_analysis_sessions(
 @analysis_router.post("/", response_model=AnalysisSession)
 async def create_analysis_session(
   context_id: str,
+  background_tasks: BackgroundTasks,
   tenant_id: str = "default",
   sysprompt_id: str = "radian0",
   title: Optional[str] = None,
-  description: Optional[str] = None
+  description: Optional[str] = None,
 ):
   analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
@@ -69,6 +71,11 @@ async def create_analysis_session(
   
   analysis_collection.insert_one(analysis_session.model_dump(exclude_none=True))
   logger.info(f"Inserted analysis session {analysis_session}")
+
+  # Create empty environment
+  empty_env = SessionEnvFile(session_id=session_id, context_id=context_id, tenant_id=tenant_id)
+  await create_environment(session_id, empty_env, background_tasks, tenant_id)
+  
   return analysis_session
 
 

@@ -273,19 +273,13 @@ def test_environment_file_operations():
 		"env_file": "SGVsbG8gV29ybGQ="  # base64 encoded "Hello World"
 	}
 	
-	create_response = client.post(
+	# no need to directly create environment file as it's done in analysis.py
+	update_response = client.put(
 		f"/environments/{session_id}",
 		json=env_data
 	)
-	assert create_response.status_code == 200
-	assert create_response.json()["session_id"] == session_id
-	assert create_response.json()["context_id"] == session["context_id"]
-	assert create_response.json()["tenant_id"] == "default"
-	# Don't check env_file immediately as it's processed in background
-	
-	# Add small delay to allow background task to complete
-	time.sleep(1)
-	
+	assert update_response.status_code == 200
+
 	# Test getting environment file
 	get_response = client.get(f"/environments/{session_id}")
 	assert get_response.status_code == 200

@@ -130,12 +130,12 @@ async def update_environment(
     projection={"_id": 0}
   )
   
-  if "file_id" in result:
-    result["file_id"] = str(result["file_id"])
-
   if not result:
     raise HTTPException(status_code=404, detail="Environment file not found")
   
+  if "file_id" in result:
+    result["file_id"] = str(result["file_id"])
+
   # Schedule file upload in background if file content exists
   if env_file.env_file:
     background_tasks.add_task(

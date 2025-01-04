@@ -90,7 +90,9 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
     )
     
     # Initialize safe environment
-    safe_env <- create_safe_env()
+    safe_env <- reactiveValues(
+      env = create_safe_env()
+    )
     
     # Load environment if it exists
     observe({
@@ -107,7 +109,7 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
           if (!is.null(env_data$env_file)) {
             # Load environment from base64 encoded RDS
             env_raw <- base64enc::base64decode(env_data$env_file)
-            safe_env <- unserialize(env_raw)
+            safe_env$env <- unserialize(env_raw)
             rv$env_saved <- TRUE
           }
         }
@@ -121,7 +123,7 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       req(selected_project())
       
       # Serialize environment to base64
-      env_raw <- serialize(safe_env, NULL)
+      env_raw <- serialize(safe_env$env, NULL)
       env_base64 <- base64enc::base64encode(env_raw)
       
       # Prepare payload
@@ -173,7 +175,12 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       )
       
       # Execute code with plot capture
-      result <- run_user_code_capture_plots(code, safe_env, device = "png")
+      result <- run_user_code_capture_plots(code, safe_env$env, device = "png")
+      
+      # update env
+      if (!is.null(result$updated_env)) {
+        list2env(result$updated_env, envir = safe_env$env)
+      }
       
       # Add to history
       rv$history[[length(rv$history) + 1]] <- list(
