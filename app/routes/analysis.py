@@ -217,14 +217,31 @@ async def get_message_from_analysis_session(session_id: str, message_id: str, te
 
 
 @analysis_router.get("/{session_id}/code", response_model=List[CodePairMessage])
-async def get_code_from_analysis_session(session_id: str, tenant_id: str = "default"):
-  analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
+async def get_code_from_analysis_session(
+	session_id: str,
+	since_timestamp: Optional[datetime] = Query(None, description="Filter code snippets after this timestamp"),
+	since_message_id: Optional[str] = Query(None, description="Filter code snippets after this message ID"),
+	tenant_id: str = "default"
+):
+	analysis_collection = tenant_collections.get_collection(tenant_id, "analysis")
 
-  code_snippets = analysis_collection.find_one({"session_id": session_id}, {"code_snippets": 1, "_id": 0})
-  if not code_snippets:
-    raise HTTPException(status_code=404, detail="No code snippets found")
-  
-  return [CodePairMessage(**code_snippet) for code_snippet in code_snippets["code_snippets"]]
+	code_snippets = analysis_collection.find_one({"session_id": session_id}, {"code_snippets": 1, "_id": 0})
+	if not code_snippets or "code_snippets" not in code_snippets:
+		raise HTTPException(status_code=404, detail="No code snippets found")
+	
+	filtered_snippets = code_snippets["code_snippets"]
+	
+	if since_timestamp:
+		filtered_snippets = [s for s in filtered_snippets if s["timestamp"] > since_timestamp]
+	
+	if since_message_id:
+		try:
+			message_index = next(i for i, s in enumerate(code_snippets["code_snippets"]) if s["message_id"] == since_message_id)
+			filtered_snippets = code_snippets["code_snippets"][message_index + 1:]
+		except StopIteration:
+			raise HTTPException(status_code=404, detail=f"Code snippet with ID {since_message_id} not found")
+	
+	return [CodePairMessage(**snippet) for snippet in filtered_snippets]
 
 
 @analysis_router.post("/{session_id}/code", response_model=Dict[str, str])
