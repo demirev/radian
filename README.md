@@ -1,5 +1,7 @@
 # RADIAN - AI-Powered Data Analysis Assistant
 
+**WORK IN PROGRESS!**
+
 RADIAN is an interactive data analysis platform that combines Large Language Models with a user-friendly R Shiny interface. It enables researchers to conduct data analysis through a combination of natural conversation with an AI agent and manual code execution, allowing for a more flexible and interactive analytical workflow.
 
 ## 🌟 Key Features
