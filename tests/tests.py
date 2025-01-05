@@ -150,14 +150,14 @@ def test_create_get_and_delete_chat():
   create_response = client.post("/chats/create", params={
     "chat_id": "test_user",
     "context_id": "test_context",
-    "agent": "borrower_assistant",
+    "agent": "test_agent",
     "description": "Test description"
   })
   assert create_response.status_code == 200
   
   chat_id = create_response.json()["chat_id"]
   assert create_response.json()["context_id"] == "test_context"
-  assert create_response.json()["agent"] == "borrower_assistant"
+  assert create_response.json()["agent"] == "test_agent"
   
   # list
   list_response = client.get("/chats/")
@@ -165,10 +165,10 @@ def test_create_get_and_delete_chat():
   assert isinstance(list_response.json(), list)
 
   # list with agent filter
-  list_response = client.get("/chats/?agent=borrower_assistant")
+  list_response = client.get("/chats/?agent=test_agent")
   assert list_response.status_code == 200
   assert isinstance(list_response.json(), list)
-  assert all([chat["agent"] == "borrower_assistant" for chat in list_response.json()])
+  assert all([chat["agent"] == "test_agent" for chat in list_response.json()])
 
   # get
   get_response = client.get(f"/chats/{chat_id}")
