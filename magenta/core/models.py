@@ -73,9 +73,6 @@ class ChatMessage(ChatInternalMessage):
 
 
 class AgentType(Enum):
-  borrower_assistant = "borrower_assistant"
-  loan_officer_assistant = "loan_officer_assistant"
-  setup_wizard = "setup_wizard"
   test_agent = "test_agent"
   test_rag_agent = "test_rag_agent"
 

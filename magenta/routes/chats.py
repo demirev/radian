@@ -18,7 +18,7 @@ async def create_chat(
 	context_id: str,
 	tenant_id: str = "default",
 	sysprompt_id: Optional[str] = None,
-	agent: AgentType = AgentType.borrower_assistant,
+	agent: AgentType = AgentType.test_agent,
 	description: Optional[str] = None
 ):
 	try:
@@ -33,13 +33,7 @@ async def create_chat(
 
 		# assign system prompt
 		if sysprompt_id is None:
-			if agent == AgentType.borrower_assistant:
-				sysprompt_id = "demoassistant0"
-			elif agent == AgentType.loan_officer_assistant:
-				sysprompt_id = "demoloassistant0"
-			elif agent == AgentType.setup_wizard:
-				sysprompt_id = "setupwizard0" # TODO
-			elif agent == AgentType.test_agent:
+			if agent == AgentType.test_agent:
 				sysprompt_id = "diceroller"  # so we test with a simple dummy agent
 			elif agent == AgentType.test_rag_agent:
 				sysprompt_id = "passwordteller"  # so we test with a simple dummy agent with document access
