@@ -72,7 +72,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		
 		# Load initial messages when project changes
 		observe({
-		  cat("Observer 1 hit. ", "\n")
+		  #cat("Observer 1 hit. ", "\n")
 			req(selected_project())
 			session_id <- selected_project()$session_id
 			
@@ -92,7 +92,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
       since_timestamp = NULL, 
       since_message_id = NULL
     ) {
-		  cat("load_messages hit. ", "\n")
+		  #cat("load_messages hit. ", "\n")
 			response <- tryCatch({
 				GET(
 					glue("{api_url}/analysis/{session_id}/messages"),
@@ -137,7 +137,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		
 		# Check message statuses
 		check_pending_messages <- function() {
-		  cat("check_pending_messages hit. ", "\n")
+		  #cat("check_pending_messages hit. ", "\n")
 			req(selected_project(), length(pending_messages()) > 0)
 			session_id <- selected_project()$session_id
 			
@@ -177,7 +177,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		
 		# Polling mechanism
 		observe({
-		  cat("Observer 2 hit. ", "\n")
+		  #cat("Observer 2 hit. ", "\n")
 			req(selected_project(), length(pending_messages()) > 0)
 			
 			# Determine polling interval based on oldest pending message
@@ -200,7 +200,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		
 		# Background polling for new messages
 		observe({
-		  cat("Observer 3 hit. ", "\n")
+		  #cat("Observer 3 hit. ", "\n")
 			req(selected_project(), !is.null(last_timestamp()))
 			invalidateLater(10000) # once every 10 seconds
 			
@@ -215,7 +215,7 @@ conversation_server <- function(id, selected_project, api_url, tenant_id) {
 		
 		# Send message
 		observeEvent(input$send_message, {
-		  cat("Observer 4 hit. ", "\n")
+		  #cat("Observer 4 hit. ", "\n")
 			req(selected_project(), input$message_input)
 			session_id <- selected_project()$session_id
 			message_text <- input$message_input

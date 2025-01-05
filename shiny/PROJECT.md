@@ -82,9 +82,11 @@ Radian is a proof-of-concept web application built with R Shiny that enables int
          - Output/results block (Out[n])
          - Execution timestamp
          - Visual indicator of execution status
+         - Generated plots (if any)
      - Code execution sources:
        - User input (primary style)
        - Agent execution (visually distinct style)
+       - Agent suggestions (with execute button)
      - IPython-like features:
        - Sequential numbering of executions
        - Syntax highlighting
@@ -93,6 +95,10 @@ Radian is a proof-of-concept web application built with R Shiny that enables int
        - Scrollable
        - Preserves formatting
        - Collapsible output sections (planned)
+       - Plot display support
+         - PNG format
+         - Responsive sizing
+         - Multiple plots per execution
      - Environment Management:
        - Code executed in isolated environment
        - Environment state persisted to server:
@@ -100,6 +106,12 @@ Radian is a proof-of-concept web application built with R Shiny that enables int
          - Manual save via UI button
        - Environment restoration on session start
        - Environment status indicator
+     - API Integration:
+       - Automatic submission of code executions
+       - Real-time polling for assistant code
+       - Support for both suggestions and direct executions
+       - Execution history persistence
+       - Plot capture and storage
   2. Data Tab
      - Data import interface:
        - File upload control
@@ -229,6 +241,47 @@ Current Recommendation:
 - OAuth2 authentication
 - Tenant-based isolation
 - Session management
+
+## API Integration Details
+
+### Code Execution Flow
+1. User/Assistant Code Execution:
+   - Code submitted through REPL interface
+   - Executed in isolated R environment
+   - Results captured (including plots)
+   - Execution details sent to API
+   - Results displayed in UI
+
+2. Assistant Integration:
+   - Periodic polling for new assistant code
+   - Two types of assistant interactions:
+     a. Code Suggestions:
+        - Displayed with distinct styling
+        - Include execute button
+        - User can choose to run suggested code
+     b. Direct Executions:
+        - Automatically executed
+        - Results displayed with assistant styling
+        - Execution results sent back to API
+
+3. History Management:
+   - Initial load of execution history
+   - Real-time updates for new executions
+   - Persistent storage through API
+   - Support for both user and assistant code
+
+4. Plot Handling:
+   - Automatic capture of generated plots
+   - PNG format for web compatibility
+   - Multiple plots per execution
+   - Responsive display in UI
+
+### State Management
+- Project-based isolation
+- Execution count tracking
+- Last seen code tracking
+- Environment state persistence
+- Real-time UI updates
 
 ---
 *Note: This is a living document that will be updated as the project specifications evolve.* 

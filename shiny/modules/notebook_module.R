@@ -86,7 +86,8 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       history = list(),
       env_saved = TRUE,
       execution_count = 0,
-      is_executing = FALSE
+      is_executing = FALSE,
+      last_code_id = NULL  # Track last seen code ID
     )
     
     # Initialize safe environment
@@ -156,7 +157,180 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
       })
     }
     
-    # Execute code
+    # Load initial code history when project changes
+    observe({
+      req(selected_project())
+      session_id <- selected_project()$session_id
+      cat("Initial GET code hit", "\n")
+      
+      # Use isolate to prevent reactivity chain
+      isolate({
+        # Reset state
+        rv$history <- list()
+        rv$execution_count <- 0
+        rv$last_code_id <- NULL
+        
+        code_history <- selected_project()$code_snippets
+        
+        if (!is.null(code_history) & nrow(code_history) > 0) {
+          # Convert to list format and add to history
+          for (i in seq_len(nrow(code_history))) {
+            code_pair <- code_history[i,]
+            rv$execution_count <- rv$execution_count + 1
+            
+            rv$history[[length(rv$history) + 1]] <- list(
+              type = switch(code_pair$role, "user" = "user", "assistant" = "agent", "unknown"), 
+              input = code_pair$code$input$code_snippet,
+              output = code_pair$code$output$response,
+              status = code_pair$code$output$status,
+              timestamp = as_datetime(code_pair$timestamp),
+              count = rv$execution_count,
+              code_id = code_pair$message_id,
+              code_type = code_pair$code$input$type  # suggestion or execution
+            )
+          }
+          
+          # Set last seen code ID
+          rv$last_code_id <- code_history$message_id[nrow(code_history)]
+        }
+      })
+    }, label = "load_initial_code_history")
+    
+    # Submit code execution to API
+    submit_code_execution <- function(code, output, status) {
+      req(selected_project())
+      
+      # Create payload according to CodePair schema
+      payload <- list(
+        input = list(
+          type = "execution",
+          language = "R",
+          code_snippet = code
+        ),
+        output = if (!is.null(output)) {
+          list(
+            response = output,
+            status = status
+          )
+        } else {
+          NULL
+        }
+      )
+      
+      tryCatch({
+        response <- POST(
+          glue("{api_url}/analysis/{selected_project()$session_id}/code"),
+          query = list(tenant_id = tenant_id()),
+          body = payload,
+          encode = "json"
+        )
+        
+        if (status_code(response) != 200) {
+          warning("Failed to submit code execution")
+        }
+      }, error = function(e) {
+        warning("Error submitting code execution: ", e$message)
+      })
+    }
+    
+    # Poll for new assistant code
+    observe({
+      req(selected_project(), !is.null(rv$last_code_id))
+      invalidateLater(5000) # Check every 5 seconds
+      cat("Polling for new assistant code hit", "\n")
+      #browser()
+      isolate({
+        tryCatch({
+          response <- GET(
+            glue("{api_url}/analysis/{selected_project()$session_id}/code"),
+            query = list(
+              tenant_id = tenant_id(),
+              since_message_id = rv$last_code_id
+            )
+          )
+          
+          if (status_code(response) == 200) {
+            new_code <- fromJSON(rawToChar(response$content))
+            if (nrow(new_code) > 0) {
+              # Process each new code pair
+              for (i in seq_len(nrow(new_code))) {
+                code_pair <- new_code[i,]
+                if (code_pair$role == "assistant") {
+                  rv$execution_count <- rv$execution_count + 1
+                  
+                  if (code_pair$code$input$type == "suggestion") {
+                    # Add suggestion to history with execute button
+                    rv$history[[length(rv$history) + 1]] <- list(
+                      type = "agent",
+                      input = code_pair$code$input$code_snippet,
+                      output = NULL,
+                      status = "suggestion",
+                      timestamp = as_datetime(code_pair$timestamp),
+                      count = rv$execution_count,
+                      code_id = code_pair$message_id,
+                      code_type = "suggestion"
+                    )
+                  } else if (code_pair$code$input$type == "execution") {
+                    # Execute the code automatically
+                    result <- run_user_code_capture_plots(
+                      code_pair$code$input$code_snippet, safe_env$env, device = "png"
+                    )
+                    
+                    rv$history[[length(rv$history) + 1]] <- list(
+                      type = "agent",
+                      input = code_pair$code$input$code_snippet,
+                      output = if (inherits(result, "error")) {
+                        result$message
+                      } else {
+                        result$console_output
+                      },
+                      plots = if (!inherits(result, "error")) result$plots else NULL,
+                      status = if (inherits(result, "error")) "error" else "success",
+                      timestamp = as_datetime(code_pair$timestamp),
+                      count = rv$execution_count,
+                      code_id = code_pair$message_id,
+                      code_type = "execution"
+                    )
+                    
+                    # Update environment
+                    if (!is.null(result$updated_env)) {
+                      list2env(result$updated_env, envir = safe_env$env)
+                    }
+                    
+                    # Submit execution result
+                    submit_code_execution(
+                      code_pair$code,
+                      if (inherits(result, "error")) result$message else result$console_output,
+                      if (inherits(result, "error")) "error" else "success"
+                    )
+                  }
+                }
+              }
+              
+              # Update last seen code ID
+              rv$last_code_id <- new_code$message[nrow(new_code)]
+            }
+          }
+        }, error = function(e) {
+          warning("Error polling for new code: ", e$message)
+        })      
+      })
+    })
+    
+    # Execute suggested code
+    observeEvent(input$execute_suggestion, {
+      suggestion_id <- as.numeric(input$execute_suggestion)
+      for (item in rv$history) {
+        if (item$code_id == suggestion_id && item$code_type == "suggestion") {
+          # Execute the suggested code
+          updateAceEditor(session, "code_editor", value = item$input)
+          click("execute_code")
+          break
+        }
+      }
+    })
+    
+    # Modify execute_code observer to submit to API
     observeEvent(input$execute_code, {
       code <- input$code_editor
       if (nchar(code) == 0) return()
@@ -220,8 +394,20 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
         icon = icon("play")
       )
       
+      # Update environment if needed
+      if (!is.null(result$updated_env)) {
+        list2env(result$updated_env, envir = safe_env$env)
+      }
+      
       # Mark environment as unsaved
       rv$env_saved <- FALSE
+      
+      # Submit to API after execution
+      submit_code_execution(
+        code,
+        if (inherits(result, "error")) result$message else result$console_output,
+        if (inherits(result, "error")) "error" else "success"
+      )
     })
     
     # Manual environment save
@@ -241,7 +427,6 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
     # Render execution history
     output$history <- renderUI({
       req(length(rv$history) > 0)
-      
       lapply(rv$history, function(item) {
         div(
           class = paste("code-pair", item$type),
@@ -253,13 +438,25 @@ notebook_server <- function(id, selected_project, api_url, tenant_id) {
                 class = "language-r",
                 paste0("In[", item$count, "]: ", item$input)
               )
-            )
+            ),
+            # Add execute button for suggestions
+            if (!is.null(item$code_type) && item$code_type == "suggestion") {
+              div(
+                style = "text-align: right; margin-top: 5px;",
+                actionButton(
+                  ns(paste0("execute_suggestion_", item$code_id)),
+                  "Execute Suggestion",
+                  icon = icon("play"),
+                  class = "btn-success btn-sm"
+                )
+              )
+            }
           ),
           # Output
           div(
             class = "code-output",
             # Console output
-            if (!is.null(item$output) && nchar(item$output) > 0) {
+            if (!is.null(item$output) && !is.na(item$output) && nchar(item$output) > 0) {
               tags$pre(
                 tags$code(item$output)
               )

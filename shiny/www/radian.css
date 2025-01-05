@@ -524,6 +524,7 @@ body, html {
 /* Assistant code block styling */
 .code-pair.agent {
   border-left: 3px solid var(--accent);
+  background-color: var(--bg-light);
 }
 
 .execution-meta {
@@ -571,5 +572,17 @@ body, html {
   height: auto;
   display: block;
   margin: 0 auto;
+}
+
+/* Code suggestion styling */
+
+.status-suggestion {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-success.btn-sm {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
 }
 
